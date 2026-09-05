@@ -7,7 +7,10 @@ import {
   Clock, 
   CheckCircle2, 
   AlertCircle,
-  MapPin
+  MapPin,
+  ExternalLink,
+  Copy,
+  Check
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Order } from '../types';
@@ -17,6 +20,7 @@ export const TrackOrderModal: React.FC = () => {
   const [searchInput, setSearchInput] = useState('');
   const [searchedOrder, setSearchedOrder] = useState<Order | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [copiedTracking, setCopiedTracking] = useState(false);
 
   if (!isTrackOrderOpen) return null;
 
@@ -202,13 +206,47 @@ export const TrackOrderModal: React.FC = () => {
                     }`}>
                       <Truck className="w-3.5 h-3.5" />
                     </div>
-                    <div>
-                      <h5 className="text-xs font-bold text-slate-900">
-                        In Transit with Courier ({searchedOrder.trackingCourier || 'Steadfast / Pathao'})
+                    <div className="space-y-1.5 w-full">
+                      <h5 className="text-xs font-bold text-slate-900 flex items-center justify-between">
+                        <span>In Transit with {searchedOrder.trackingCourier || 'Steadfast / Pathao'}</span>
+                        {searchedOrder.courierStatus && (
+                          <span className="text-[10px] bg-sky-100 text-sky-800 font-bold px-2 py-0.5 rounded-md">
+                            {searchedOrder.courierStatus}
+                          </span>
+                        )}
                       </h5>
-                      <p className="text-[11px] text-slate-500">
-                        Consignment Tracking: <strong className="font-mono text-slate-800">{searchedOrder.trackingNumber || 'BD-882103'}</strong>
-                      </p>
+                      
+                      <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                        <div className="px-2.5 py-1 bg-slate-100 rounded-lg text-[11px] font-mono font-bold text-slate-800 flex items-center gap-2 border border-slate-200">
+                          <span>Consignment: {searchedOrder.trackingNumber || searchedOrder.consignmentId || 'Pending'}</span>
+                          {(searchedOrder.trackingNumber || searchedOrder.consignmentId) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(searchedOrder.trackingNumber || searchedOrder.consignmentId || '');
+                                setCopiedTracking(true);
+                                setTimeout(() => setCopiedTracking(false), 2000);
+                              }}
+                              className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
+                              title="Copy Tracking ID"
+                            >
+                              {copiedTracking ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          )}
+                        </div>
+
+                        {searchedOrder.courierTrackingUrl && (
+                          <a
+                            href={searchedOrder.courierTrackingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 text-[11px] font-bold border border-sky-200 transition-colors"
+                          >
+                            <span>Live Tracking Portal</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
 

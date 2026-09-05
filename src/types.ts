@@ -66,8 +66,58 @@ export interface Order {
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   trackingCourier?: string;
   trackingNumber?: string;
+  consignmentId?: string;
+  courierStatus?: string;
+  courierTrackingUrl?: string;
+  courierBookedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CourierSettings {
+  autoBookOnOrder: boolean;
+  defaultCourier: 'steadfast' | 'pathao' | 'zone_smart';
+  // Steadfast
+  steadfastEnabled: boolean;
+  steadfastApiKey: string;
+  steadfastSecretKey: string;
+  steadfastSandbox: boolean;
+  // Pathao
+  pathaoEnabled: boolean;
+  pathaoClientId: string;
+  pathaoClientSecret: string;
+  pathaoUsername: string;
+  pathaoPassword: string;
+  pathaoStoreId: string;
+  pathaoSandbox: boolean;
+}
+
+export interface ProductReview {
+  id: string;
+  productId: string;
+  userName: string;
+  userLocation?: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  verifiedBuyer?: boolean;
+}
+
+export interface FlashSaleConfig {
+  enabled: boolean;
+  title: string;
+  subtitle: string;
+  endTime: string;
+  discountLabel: string;
+}
+
+export interface SmsSettings {
+  enabled: boolean;
+  provider: 'greenweb' | 'bulksmsbd' | 'simulation';
+  apiKey: string;
+  senderId: string;
+  autoSendOnOrder: boolean;
+  autoSendOnCourier: boolean;
 }
 
 export interface SiteSettings {
@@ -96,4 +146,7 @@ export interface SiteSettings {
   whatsappNumber?: string;
   adminLoginId?: string;
   adminPassword?: string;
+  courierSettings?: CourierSettings;
+  flashSale?: FlashSaleConfig;
+  smsSettings?: SmsSettings;
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, ShoppingBag, Star, Eye } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Eye, MessageCircle } from 'lucide-react';
 import { Product } from '../types';
 import { useStore } from '../context/StoreContext';
 
@@ -8,12 +8,24 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { addToCart, toggleWishlist, isInWishlist, setSelectedProductForModal } = useStore();
+  const { addToCart, toggleWishlist, isInWishlist, setSelectedProductForModal, settings } = useStore();
 
   const isWishlisted = isInWishlist(product.id);
   const discountPercent = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
+
+  // WhatsApp Link for quick order
+  const rawWaNumber = settings.whatsappNumber || settings.contactPhone || '01711223344';
+  const cleanWaNumber = rawWaNumber.replace(/[^0-9]/g, '');
+  const formattedWa = cleanWaNumber.startsWith('88') ? cleanWaNumber : `88${cleanWaNumber.replace(/^0/, '')}`;
+  const waMessage = encodeURIComponent(
+    `Assalamu Alaikum, I want to order this product from ${settings.siteName}:\n\n` +
+    `🛍️ *Product:* ${product.name}\n` +
+    `💰 *Price:* ৳${product.price.toLocaleString()}\n` +
+    `Link: ${window.location.origin}\n\nPlease confirm my order!`
+  );
+  const whatsappUrl = `https://wa.me/${formattedWa}?text=${waMessage}`;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -130,20 +142,35 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </span>
           </div>
 
-          {/* Quick Cart Button */}
-          <button
-            id={`btn-add-cart-${product.id}`}
-            onClick={handleQuickAdd}
-            disabled={product.stock <= 0}
-            className={`p-2.5 rounded-xl font-medium transition-all shadow-xs flex items-center justify-center cursor-pointer ${
-              product.stock > 0
-                ? 'bg-slate-900 text-white hover:bg-rose-600 hover:shadow-rose-200'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            }`}
-            title="Add to Cart"
-          >
-            <ShoppingBag className="w-4 h-4" />
-          </button>
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1.5">
+            <a
+              id={`btn-wa-${product.id}`}
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all shadow-xs flex items-center justify-center cursor-pointer"
+              title="Order on WhatsApp (হোয়াটসঅ্যাপে সরাসরি অর্ডার)"
+            >
+              <MessageCircle className="w-4 h-4" />
+            </a>
+
+            {/* Quick Cart Button */}
+            <button
+              id={`btn-add-cart-${product.id}`}
+              onClick={handleQuickAdd}
+              disabled={product.stock <= 0}
+              className={`p-2.5 rounded-xl font-medium transition-all shadow-xs flex items-center justify-center cursor-pointer ${
+                product.stock > 0
+                  ? 'bg-slate-900 text-white hover:bg-rose-600 hover:shadow-rose-200'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+              title="Add to Cart"
+            >
+              <ShoppingBag className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

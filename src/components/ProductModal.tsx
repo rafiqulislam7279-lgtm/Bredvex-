@@ -11,7 +11,10 @@ import {
   Plus, 
   Minus,
   Sparkles,
-  Share2
+  Share2,
+  MessageCircle,
+  Send,
+  MessageSquarePlus
 } from 'lucide-react';
 import { Product } from '../types';
 import { useStore } from '../context/StoreContext';
@@ -27,7 +30,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
     toggleWishlist, 
     isInWishlist, 
     setIsCheckoutOpen,
-    settings 
+    settings,
+    reviews,
+    addReview
   } = useStore();
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -41,10 +46,38 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
   const [activeTab, setActiveTab] = useState<'details' | 'specs' | 'reviews'>('details');
   const [copied, setCopied] = useState(false);
 
+  // Review submission state
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newRating, setNewRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewerName, setReviewerName] = useState('');
+  const [reviewerCity, setReviewerCity] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+
   const isWishlisted = isInWishlist(product.id);
   const discountPercent = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
+
+  // Filter reviews for this product
+  const productReviews = reviews.filter(r => r.productId === product.id);
+
+  // Pre-formatted WhatsApp order message
+  const rawWaNumber = settings.whatsappNumber || settings.contactPhone || '01711223344';
+  const cleanWaNumber = rawWaNumber.replace(/[^0-9]/g, '');
+  const formattedWa = cleanWaNumber.startsWith('88') ? cleanWaNumber : `88${cleanWaNumber.replace(/^0/, '')}`;
+  const waMessage = encodeURIComponent(
+    `Assalamu Alaikum, I would like to order this item from ${settings.siteName}:\n\n` +
+    `🛍️ *Product:* ${product.name}\n` +
+    `💰 *Price:* ৳${product.price.toLocaleString()}\n` +
+    `📦 *Quantity:* ${quantity}\n` +
+    (selectedColor ? `🎨 *Color:* ${selectedColor}\n` : '') +
+    (selectedSize ? `📏 *Size:* ${selectedSize}\n` : '') +
+    `💵 *Total:* ৳${(product.price * quantity).toLocaleString()}\n\n` +
+    `Please confirm my delivery address and payment options!`
+  );
+  const whatsappUrl = `https://wa.me/${formattedWa}?text=${waMessage}`;
 
   const handleAddToCart = () => {
     addToCart(product, quantity, selectedColor || undefined, selectedSize || undefined);
@@ -61,6 +94,29 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
     navigator.clipboard?.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSubmitReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewerName.trim() || !reviewComment.trim()) return;
+
+    addReview({
+      productId: product.id,
+      userName: reviewerName.trim(),
+      userLocation: reviewerCity.trim() || 'Dhaka',
+      rating: newRating,
+      comment: reviewComment.trim(),
+      verifiedBuyer: true
+    });
+
+    setReviewSuccess(true);
+    setReviewerName('');
+    setReviewerCity('');
+    setReviewComment('');
+    setTimeout(() => {
+      setReviewSuccess(false);
+      setShowReviewForm(false);
+    }, 2000);
   };
 
   return (
@@ -304,6 +360,18 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
                 </button>
               </div>
 
+              {/* WhatsApp Quick Order Button */}
+              <a
+                id="btn-modal-order-whatsapp"
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4 fill-white" />
+                <span>Order via WhatsApp (হোয়াটসঅ্যাপে সরাসরি অর্ডার করুন)</span>
+              </a>
+
               {/* Guarantee items */}
               <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 pt-2 border-t border-slate-100">
                 <div className="flex items-center gap-1.5">
@@ -371,38 +439,178 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
               )}
 
               {activeTab === 'reviews' && (
-                <div className="space-y-3">
-                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/60 flex items-center justify-between">
-                    <div>
-                      <span className="text-2xl font-black text-slate-900">{product.rating}</span>
-                      <span className="text-xs text-slate-500 ml-1">/ 5.0 Rating</span>
+                <div className="space-y-4">
+                  {/* Rating Header with Write Review Trigger */}
+                  <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200/80 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <span className="text-3xl font-black text-slate-900">{product.rating.toFixed(1)}</span>
+                        <span className="text-xs text-slate-500 ml-1 font-medium">/ 5.0</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star 
+                              key={s} 
+                              className={`w-4 h-4 ${
+                                s <= Math.round(product.rating) 
+                                  ? 'fill-amber-400 text-amber-400' 
+                                  : 'fill-slate-200 text-slate-300'
+                              }`} 
+                            />
+                          ))}
+                        </div>
+                        <p className="text-[11px] text-slate-500">Based on {productReviews.length || product.reviewsCount} customer reviews</p>
+                      </div>
                     </div>
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowReviewForm(!showReviewForm)}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <MessageSquarePlus className="w-3.5 h-3.5" />
+                      <span>{showReviewForm ? 'Cancel Form' : 'Write a Review (রিভিউ দিন)'}</span>
+                    </button>
                   </div>
 
-                  <div className="space-y-2 text-xs">
-                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/60">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-slate-900">Rahim Chowdhury (Dhaka)</span>
-                        <span className="text-[10px] text-emerald-600 font-semibold">✓ Verified Buyer</span>
+                  {/* Submission Form Modal/Section */}
+                  {showReviewForm && (
+                    <form onSubmit={handleSubmitReview} className="p-5 bg-white rounded-2xl border-2 border-rose-200 space-y-4 shadow-sm animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Submit Your Product Review & Rating:</h4>
+                        <span className="text-[11px] text-emerald-600 font-semibold">✓ Verified Customer</span>
                       </div>
-                      <p className="text-slate-600">
-                        "Alhamdulillah onk valo product. bKash payment korechi ebong 24 ghontar moddhe hate peyechi. Packaging khub sundor chilo!"
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/60">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-slate-900">Sharmin Akter (Chattogram)</span>
-                        <span className="text-[10px] text-emerald-600 font-semibold">✓ Verified Buyer</span>
+
+                      {/* Interactive Star Rating */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Your Rating (স্টার সিলেক্ট করুন):</label>
+                        <div className="flex items-center gap-1.5 pt-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setNewRating(star)}
+                              onMouseEnter={() => setHoverRating(star)}
+                              onMouseLeave={() => setHoverRating(0)}
+                              className="p-1 text-slate-300 transition-transform hover:scale-110 cursor-pointer"
+                            >
+                              <Star
+                                className={`w-6 h-6 transition-colors ${
+                                  (hoverRating || newRating) >= star
+                                    ? 'fill-amber-400 text-amber-400'
+                                    : 'text-slate-300 fill-slate-100'
+                                }`}
+                              />
+                            </button>
+                          ))}
+                          <span className="text-xs font-bold text-slate-700 ml-2">
+                            {hoverRating || newRating} / 5 Stars
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-slate-600">
-                        "Original quality, genuine product. Bredvex er service onk professional. Recommended for all!"
-                      </p>
-                    </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-700">Your Name (আপনার নাম) *</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Mahfuzur Rahman"
+                            value={reviewerName}
+                            onChange={(e) => setReviewerName(e.target.value)}
+                            className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-600"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-slate-700">District / City (জেলা/শহর)</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Mirpur, Dhaka"
+                            value={reviewerCity}
+                            onChange={(e) => setReviewerCity(e.target.value)}
+                            className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-600"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700">Your Feedback (আপনার অভিজ্ঞতা ও মন্তব্য) *</label>
+                        <textarea
+                          rows={3}
+                          required
+                          placeholder="Tell others about product build quality, delivery speed, packaging, etc."
+                          value={reviewComment}
+                          onChange={(e) => setReviewComment(e.target.value)}
+                          className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-600 resize-none"
+                        />
+                      </div>
+
+                      {reviewSuccess && (
+                        <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-2">
+                          <Check className="w-4 h-4 text-emerald-600" />
+                          <span>Thank you! Your review has been submitted successfully.</span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowReviewForm(false)}
+                          className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          <span>Submit Review (মতামত দিন)</span>
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* Reviews List */}
+                  <div className="space-y-3">
+                    {productReviews.length > 0 ? (
+                      productReviews.map((rev) => (
+                        <div key={rev.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs text-slate-900">{rev.userName}</span>
+                              {rev.userLocation && (
+                                <span className="text-[10px] text-slate-500">({rev.userLocation})</span>
+                              )}
+                              {rev.verifiedBuyer && (
+                                <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                  ✓ Verified Buyer
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star 
+                                  key={s} 
+                                  className={`w-3.5 h-3.5 ${
+                                    s <= rev.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
+                                  }`} 
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-700 leading-relaxed">{rev.comment}</p>
+                          <p className="text-[10px] text-slate-400 font-mono">
+                            {new Date(rev.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-6 bg-slate-50 rounded-2xl border border-slate-200/60 text-slate-500 text-xs">
+                        <p>No reviews yet for this product. Be the first to share your experience!</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

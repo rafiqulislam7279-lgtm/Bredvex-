@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, CartItem, Order, SiteSettings, CustomerInfo, PaymentMethod } from '../types';
-import { INITIAL_PRODUCTS, INITIAL_SETTINGS, INITIAL_ORDERS } from '../data/initialData';
+import { Product, CartItem, Order, SiteSettings, CustomerInfo, PaymentMethod, ProductReview } from '../types';
+import { INITIAL_PRODUCTS, INITIAL_SETTINGS, INITIAL_ORDERS, INITIAL_REVIEWS } from '../data/initialData';
+import { dispatchOrder, DispatchResult } from '../services/courierService';
+import { sendSmsNotification, generateOrderSmsText, generateCourierSmsText } from '../services/smsService';
 
 interface StoreContextType {
   products: Product[];
@@ -8,6 +10,7 @@ interface StoreContextType {
   settings: SiteSettings;
   cart: CartItem[];
   wishlistIds: string[];
+  reviews: ProductReview[];
   isAdminAuthenticated: boolean;
   activeView: 'shop' | 'admin';
   selectedProductForModal: Product | null;
@@ -46,6 +49,10 @@ interface StoreContextType {
   toggleWishlist: (productId: string) => void;
   isInWishlist: (productId: string) => boolean;
 
+  // Reviews operations
+  addReview: (review: Omit<ProductReview, 'id' | 'createdAt'>) => void;
+  deleteReview: (reviewId: string) => void;
+
   // Checkout & Orders
   checkout: (
     customerInfo: CustomerInfo,
@@ -55,6 +62,8 @@ interface StoreContextType {
   ) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   updateOrderPaymentStatus: (orderId: string, status: Order['paymentStatus']) => void;
+  dispatchOrderToCourier: (orderId: string, courier: 'steadfast' | 'pathao' | 'auto') => Promise<DispatchResult>;
+  sendOrderSms: (orderId: string, type: 'order_placed' | 'courier_dispatch' | 'custom', customMsg?: string) => Promise<{ success: boolean; message: string }>;
   
   // Admin Operations
   adminLogin: (id: string, pass: string) => boolean;
@@ -131,6 +140,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return [];
   });
 
+  // Product Reviews
+  const [reviews, setReviews] = useState<ProductReview[]>(() => {
+    try {
+      const saved = localStorage.getItem('bredvex_reviews');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return INITIAL_REVIEWS;
+  });
+
   // Admin Auth
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
     try {
@@ -194,6 +214,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.error('Failed to save wishlist:', e);
     }
   }, [wishlistIds]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('bredvex_reviews', JSON.stringify(reviews));
+    } catch (e) {
+      console.error('Failed to save reviews:', e);
+    }
+  }, [reviews]);
 
   useEffect(() => {
     try {
@@ -331,6 +359,34 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       updatedAt: new Date().toISOString(),
     };
 
+    // Check if Courier Auto-Book is enabled
+    if (settings.courierSettings?.autoBookOnOrder) {
+      try {
+        const dispatchRes = await dispatchOrder(newOrder, 'auto', settings.courierSettings);
+        if (dispatchRes.success) {
+          newOrder.trackingCourier = dispatchRes.courier;
+          newOrder.trackingNumber = dispatchRes.trackingCode;
+          newOrder.consignmentId = dispatchRes.consignmentId;
+          newOrder.courierStatus = 'Booked';
+          newOrder.courierTrackingUrl = dispatchRes.trackingUrl;
+          newOrder.courierBookedAt = new Date().toISOString();
+          newOrder.status = 'processing';
+        }
+      } catch (e) {
+        console.error('Courier auto-booking error:', e);
+      }
+    }
+
+    // Auto-send SMS to customer on Order Placed if enabled
+    if (settings.smsSettings?.enabled && settings.smsSettings?.autoSendOnOrder) {
+      try {
+        const text = generateOrderSmsText(newOrder, settings.siteName);
+        sendSmsNotification(newOrder.customerInfo.phone, text, settings.smsSettings).catch(console.warn);
+      } catch (err) {
+        console.warn('Auto SMS on order error:', err);
+      }
+    }
+
     // Reduce stock of products
     setProducts(prev =>
       prev.map(prod => {
@@ -362,6 +418,106 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setOrders(prev =>
       prev.map(ord => (ord.id === orderId ? { ...ord, paymentStatus, updatedAt: new Date().toISOString() } : ord))
     );
+  };
+
+  const dispatchOrderToCourier = async (
+    orderId: string,
+    courier: 'steadfast' | 'pathao' | 'auto'
+  ): Promise<DispatchResult> => {
+    const targetOrder = orders.find(o => o.id === orderId);
+    if (!targetOrder) {
+      throw new Error(`Order ${orderId} not found`);
+    }
+
+    const res = await dispatchOrder(targetOrder, courier, settings.courierSettings);
+    if (res.success) {
+      setOrders(prev =>
+        prev.map(ord => {
+          if (ord.id === orderId) {
+            return {
+              ...ord,
+              trackingCourier: res.courier,
+              trackingNumber: res.trackingCode,
+              consignmentId: res.consignmentId,
+              courierStatus: 'Booked',
+              courierTrackingUrl: res.trackingUrl,
+              courierBookedAt: new Date().toISOString(),
+              status: ord.status === 'pending' ? 'processing' : ord.status,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return ord;
+        })
+      );
+
+      // Auto-send SMS on Courier Booking if enabled
+      if (settings.smsSettings?.enabled && settings.smsSettings?.autoSendOnCourier) {
+        try {
+          const updatedForSms = {
+            ...targetOrder,
+            trackingCourier: res.courier,
+            trackingNumber: res.trackingCode,
+            consignmentId: res.consignmentId
+          };
+          const smsText = generateCourierSmsText(updatedForSms, settings.siteName);
+          sendSmsNotification(targetOrder.customerInfo.phone, smsText, settings.smsSettings).catch(console.warn);
+        } catch (smsErr) {
+          console.warn('Auto SMS on courier booking error:', smsErr);
+        }
+      }
+    }
+    return res;
+  };
+
+  const sendOrderSms = async (
+    orderId: string,
+    type: 'order_placed' | 'courier_dispatch' | 'custom',
+    customMsg?: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return { success: false, message: 'Order not found' };
+
+    let text = customMsg || '';
+    if (type === 'order_placed') {
+      text = generateOrderSmsText(order, settings.siteName);
+    } else if (type === 'courier_dispatch') {
+      text = generateCourierSmsText(order, settings.siteName);
+    }
+
+    const res = await sendSmsNotification(order.customerInfo.phone, text, settings.smsSettings);
+    return {
+      success: res.success,
+      message: res.message
+    };
+  };
+
+  const addReview = (reviewData: Omit<ProductReview, 'id' | 'createdAt'>) => {
+    const newRev: ProductReview = {
+      ...reviewData,
+      id: `rev-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setReviews(prev => [newRev, ...prev]);
+
+    // Recalculate average rating & reviewsCount for that product
+    setProducts(prev =>
+      prev.map(p => {
+        if (p.id === reviewData.productId) {
+          const productReviews = [newRev, ...reviews.filter(r => r.productId === p.id)];
+          const avg = Number((productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length).toFixed(1));
+          return {
+            ...p,
+            rating: avg,
+            reviewsCount: productReviews.length
+          };
+        }
+        return p;
+      })
+    );
+  };
+
+  const deleteReview = (reviewId: string) => {
+    setReviews(prev => prev.filter(r => r.id !== reviewId));
   };
 
   // Admin Auth
@@ -426,6 +582,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         settings,
         cart,
         wishlistIds,
+        reviews,
         isAdminAuthenticated,
         activeView,
         selectedProductForModal,
@@ -457,9 +614,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         removeCoupon,
         toggleWishlist,
         isInWishlist,
+        addReview,
+        deleteReview,
         checkout,
         updateOrderStatus,
         updateOrderPaymentStatus,
+        dispatchOrderToCourier,
+        sendOrderSms,
         adminLogin,
         adminLogout,
         addProduct,

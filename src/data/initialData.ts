@@ -1,4 +1,4 @@
-import { Product, Category, SiteSettings, Order } from '../types';
+import { Product, Category, SiteSettings, Order, ProductReview } from '../types';
 
 export const INITIAL_CATEGORIES: Category[] = [
   {
@@ -429,8 +429,81 @@ export const INITIAL_SETTINGS: SiteSettings = {
   facebookUrl: 'https://facebook.com',
   whatsappNumber: '+8801711223344',
   adminLoginId: 'admin',
-  adminPassword: '123456'
+  adminPassword: '123456',
+  courierSettings: {
+    autoBookOnOrder: false, // Can be toggled on by admin
+    defaultCourier: 'zone_smart',
+    steadfastEnabled: true,
+    steadfastApiKey: '',
+    steadfastSecretKey: '',
+    steadfastSandbox: true,
+    pathaoEnabled: true,
+    pathaoClientId: '',
+    pathaoClientSecret: '',
+    pathaoUsername: '',
+    pathaoPassword: '',
+    pathaoStoreId: '',
+    pathaoSandbox: true,
+  },
+  flashSale: {
+    enabled: true,
+    title: '⚡ Weekend Mega Flash Sale',
+    subtitle: 'Flat 15% - 40% OFF across premium electronics & accessories',
+    endTime: new Date(Date.now() + 42 * 60 * 60 * 1000 + 35 * 60 * 1000).toISOString(),
+    discountLabel: 'UP TO 40% OFF'
+  },
+  smsSettings: {
+    enabled: true,
+    provider: 'simulation',
+    apiKey: '',
+    senderId: 'BREDVEX',
+    autoSendOnOrder: true,
+    autoSendOnCourier: true
+  }
 };
+
+export const INITIAL_REVIEWS: ProductReview[] = [
+  {
+    id: 'rev-1',
+    productId: 'bvx-001',
+    userName: 'Rahim Chowdhury',
+    userLocation: 'Dhanmondi, Dhaka',
+    rating: 5,
+    comment: 'Alhamdulillah onk valo smart watch. Display smooth ebong battery backup 7 days easily jay. Packaging khub sundor chilo!',
+    createdAt: '2026-03-01T14:20:00Z',
+    verifiedBuyer: true
+  },
+  {
+    id: 'rev-2',
+    productId: 'bvx-001',
+    userName: 'Sharmin Akter',
+    userLocation: 'Nasirabad, Chattogram',
+    rating: 5,
+    comment: 'AMOLED display ta oshadharon. Calling quality o besh clear. Fast delivery peyechi via Pathao Courier.',
+    createdAt: '2026-03-02T10:15:00Z',
+    verifiedBuyer: true
+  },
+  {
+    id: 'rev-3',
+    productId: 'bvx-002',
+    userName: 'Tanvir Ahmed',
+    userLocation: 'Sylhet Sadar',
+    rating: 5,
+    comment: 'ANC performance onk valo. Bass deep and punchy. Steadfast delivery khub fast chilo!',
+    createdAt: '2026-03-03T16:45:00Z',
+    verifiedBuyer: true
+  },
+  {
+    id: 'rev-4',
+    productId: 'bvx-003',
+    userName: 'Saiful Islam',
+    userLocation: 'Uttara, Dhaka',
+    rating: 5,
+    comment: 'Original cowhide leather er smell ta darun. Finishing ebong RFID protection perfect.',
+    createdAt: '2026-03-04T11:30:00Z',
+    verifiedBuyer: true
+  }
+];
 
 export const INITIAL_ORDERS: Order[] = [
   {

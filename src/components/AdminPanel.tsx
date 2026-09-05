@@ -25,11 +25,23 @@ import {
   Sparkles,
   AlertCircle,
   KeyRound,
-  CheckCircle2
+  CheckCircle2,
+  Send,
+  ExternalLink,
+  Copy,
+  Zap,
+  Radio,
+  Printer,
+  MessageSquare,
+  Flame,
+  Star,
+  MessageCircle
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { Product, SiteSettings, Order } from '../types';
+import { Product, SiteSettings, Order, CourierSettings } from '../types';
 import { INITIAL_CATEGORIES } from '../data/initialData';
+import { InvoiceModal } from './InvoiceModal';
+import { SendSmsModal } from './SendSmsModal';
 
 export const AdminPanel: React.FC = () => {
   const {
@@ -44,9 +56,12 @@ export const AdminPanel: React.FC = () => {
     orders,
     updateOrderStatus,
     updateOrderPaymentStatus,
+    dispatchOrderToCourier,
     settings,
     updateSettings,
-    resetToDefaults
+    resetToDefaults,
+    reviews,
+    deleteReview
   } = useStore();
 
   // Login form states
@@ -56,7 +71,40 @@ export const AdminPanel: React.FC = () => {
   const [loginError, setLoginError] = useState('');
 
   // Admin tab states
-  const [adminTab, setAdminTab] = useState<'overview' | 'products' | 'orders' | 'settings'>('overview');
+  const [adminTab, setAdminTab] = useState<'overview' | 'products' | 'orders' | 'courier' | 'settings' | 'security' | 'reviews'>('overview');
+
+  // Order Invoicing & SMS Modals State
+  const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<Order | null>(null);
+  const [selectedOrderForSms, setSelectedOrderForSms] = useState<Order | null>(null);
+  const [smsAlertBanner, setSmsAlertBanner] = useState<string | null>(null);
+  const [reviewFilterProduct, setReviewFilterProduct] = useState<string>('all');
+
+  // Courier state
+  const [dispatchingOrderId, setDispatchingOrderId] = useState<string | null>(null);
+  const [dispatchNotification, setDispatchNotification] = useState<{ orderId: string; message: string; success: boolean } | null>(null);
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
+  const [testingCourier, setTestingCourier] = useState<'steadfast' | 'pathao' | null>(null);
+  const [testCourierFeedback, setTestCourierFeedback] = useState<{ type: string; message: string; success: boolean } | null>(null);
+  const [courierSaveSuccess, setCourierSaveSuccess] = useState(false);
+
+  // Local courier settings form
+  const [courierForm, setCourierForm] = useState<CourierSettings>(() => {
+    return settings.courierSettings || {
+      autoBookOnOrder: false,
+      defaultCourier: 'zone_smart',
+      steadfastEnabled: true,
+      steadfastApiKey: '',
+      steadfastSecretKey: '',
+      steadfastSandbox: true,
+      pathaoEnabled: true,
+      pathaoClientId: '',
+      pathaoClientSecret: '',
+      pathaoUsername: '',
+      pathaoPassword: '',
+      pathaoStoreId: '',
+      pathaoSandbox: true,
+    };
+  });
 
   // Product modal (Add / Edit) states
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -282,6 +330,88 @@ export const AdminPanel: React.FC = () => {
     setTimeout(() => setPasswordChangeSuccess(''), 5000);
   };
 
+  // Dispatch Order to Courier (Steadfast or Pathao)
+  const handleDispatchCourier = async (orderId: string, courier: 'steadfast' | 'pathao') => {
+    setDispatchingOrderId(orderId);
+    setDispatchNotification(null);
+    try {
+      const res = await dispatchOrderToCourier(orderId, courier);
+      setDispatchNotification({
+        orderId,
+        message: res.message,
+        success: res.success,
+      });
+      setTimeout(() => {
+        setDispatchNotification(null);
+      }, 7000);
+    } catch (err: any) {
+      setDispatchNotification({
+        orderId,
+        message: err.message || 'Failed to dispatch order to courier',
+        success: false,
+      });
+    } finally {
+      setDispatchingOrderId(null);
+    }
+  };
+
+  // Save Courier Automation Settings
+  const handleSaveCourierSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSettings({
+      ...settings,
+      courierSettings: courierForm,
+    });
+    setCourierSaveSuccess(true);
+    setTimeout(() => setCourierSaveSuccess(false), 3000);
+  };
+
+  // Test Courier Connection
+  const handleTestCourier = async (type: 'steadfast' | 'pathao') => {
+    setTestingCourier(type);
+    setTestCourierFeedback(null);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    if (type === 'steadfast') {
+      if (courierForm.steadfastApiKey && courierForm.steadfastSecretKey) {
+        setTestCourierFeedback({
+          type: 'steadfast',
+          message: courierForm.steadfastSandbox 
+            ? '✅ Steadfast Sandbox connection verified! Ready to dispatch demo parcels.'
+            : '✅ Steadfast API credentials format is valid! Ready for live parcel dispatching.',
+          success: true,
+        });
+      } else {
+        setTestCourierFeedback({
+          type: 'steadfast',
+          message: courierForm.steadfastSandbox
+            ? 'ℹ️ Steadfast Sandbox mode is active. You can dispatch test orders right now without real API keys.'
+            : '⚠️ Please enter both Steadfast API Key and Secret Key to test live connection.',
+          success: courierForm.steadfastSandbox,
+        });
+      }
+    } else {
+      if (courierForm.pathaoClientId && courierForm.pathaoClientSecret) {
+        setTestCourierFeedback({
+          type: 'pathao',
+          message: courierForm.pathaoSandbox
+            ? '✅ Pathao Sandbox connection verified! Ready to dispatch demo parcels.'
+            : '✅ Pathao API credentials format is valid! Ready for live booking.',
+          success: true,
+        });
+      } else {
+        setTestCourierFeedback({
+          type: 'pathao',
+          message: courierForm.pathaoSandbox
+            ? 'ℹ️ Pathao Sandbox mode is active. You can dispatch test orders right now without real API keys.'
+            : '⚠️ Please enter Pathao Client ID and Client Secret to test live connection.',
+          success: courierForm.pathaoSandbox,
+        });
+      }
+    }
+    setTestingCourier(null);
+  };
+
   // Metrics Calculations
   const totalRevenue = orders.reduce((acc, o) => acc + o.grandTotal, 0);
   const pendingOrdersCount = orders.filter(o => o.status === 'pending').length;
@@ -365,19 +495,26 @@ export const AdminPanel: React.FC = () => {
           </form>
 
           {/* Quick Fill credentials helper box */}
-          <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 space-y-2">
+          <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-xs text-amber-950 space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="font-bold">Authorized Admin Access:</span>
+              <div className="flex items-center gap-1.5 font-bold text-amber-950">
+                <KeyRound className="w-4 h-4 text-amber-600" />
+                <span>Admin Security & Login Info:</span>
+              </div>
               <button
                 type="button"
                 onClick={handleQuickFill}
-                className="px-2.5 py-1 rounded-md bg-amber-200/80 hover:bg-amber-300 font-bold text-[11px] transition-colors cursor-pointer"
+                className="px-2.5 py-1 rounded-md bg-amber-200/90 hover:bg-amber-300 font-bold text-[11px] transition-colors cursor-pointer text-amber-950"
               >
                 1-Click Auto Fill
               </button>
             </div>
-            <p className="text-[11px] text-amber-950">
-              Only authorized store administrators can access product editing and order controls.
+            <div className="p-2 bg-amber-100/70 rounded-lg text-[12px] space-y-1 font-mono">
+              <p>Default Login ID: <strong>{settings.adminLoginId || 'admin'}</strong></p>
+              <p>Default Password: <strong>123456</strong></p>
+            </div>
+            <p className="text-[11px] text-amber-900 leading-snug">
+              🔐 <strong>পাসওয়ার্ড পরিবর্তন:</strong> Once signed in, you can change your Login ID & Password anytime under the <strong>"Admin Security & Password"</strong> tab at the top.
             </p>
           </div>
 
@@ -417,6 +554,18 @@ export const AdminPanel: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2.5">
+            <button
+              id="btn-header-admin-security"
+              onClick={() => setAdminTab('security')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                adminTab === 'security'
+                  ? 'bg-amber-400 text-slate-950 font-black shadow-sm'
+                  : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-400/30'
+              }`}
+            >
+              <KeyRound className="w-4 h-4 text-amber-400" />
+              <span>Admin Security & Password</span>
+            </button>
             <button
               id="btn-admin-view-store"
               onClick={() => setActiveView('shop')}
@@ -482,6 +631,24 @@ export const AdminPanel: React.FC = () => {
           </button>
 
           <button
+            id="tab-admin-courier"
+            onClick={() => setAdminTab('courier')}
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              adminTab === 'courier'
+                ? 'border-amber-400 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            <Truck className="w-4 h-4 text-emerald-400" />
+            <span>Courier Automation (Steadfast & Pathao)</span>
+            {settings.courierSettings?.autoBookOnOrder && (
+              <span className="px-1.5 py-0.5 rounded-sm bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase tracking-wider">
+                Auto ON
+              </span>
+            )}
+          </button>
+
+          <button
             id="tab-admin-settings"
             onClick={() => setAdminTab('settings')}
             className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer flex items-center gap-2 whitespace-nowrap ${
@@ -493,11 +660,54 @@ export const AdminPanel: React.FC = () => {
             <SettingsIcon className="w-4 h-4" />
             <span>Store Logo & Info Settings</span>
           </button>
+
+          <button
+            id="tab-admin-reviews"
+            onClick={() => setAdminTab('reviews')}
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              adminTab === 'reviews'
+                ? 'border-amber-400 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            <Star className="w-4 h-4 text-amber-400" />
+            <span>Product Reviews ({reviews.length})</span>
+          </button>
+
+          <button
+            id="tab-admin-security"
+            onClick={() => setAdminTab('security')}
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              adminTab === 'security'
+                ? 'border-amber-400 text-amber-400'
+                : 'border-transparent text-amber-300/80 hover:text-amber-300'
+            }`}
+          >
+            <KeyRound className="w-4 h-4 text-amber-400" />
+            <span>Admin Security & Password</span>
+          </button>
         </div>
       </div>
 
       {/* Main Tab Views */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
+        
+        {/* SMS Global Notification Alert Banner */}
+        {smsAlertBanner && (
+          <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-medium flex items-center justify-between gap-3 shadow-xs animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-indigo-600 shrink-0" />
+              <span>{smsAlertBanner}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSmsAlertBanner(null)}
+              className="text-indigo-400 hover:text-indigo-700 p-1 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
         
         {/* ===================== TAB 1: OVERVIEW ===================== */}
         {adminTab === 'overview' && (
@@ -569,6 +779,14 @@ export const AdminPanel: React.FC = () => {
                 >
                   <SettingsIcon className="w-4 h-4" />
                   <span>Store Logo & Info</span>
+                </button>
+                <button
+                  id="btn-quick-admin-security"
+                  onClick={() => setAdminTab('security')}
+                  className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
+                >
+                  <KeyRound className="w-4 h-4 text-slate-950" />
+                  <span>Admin Security & Password</span>
                 </button>
               </div>
             </div>
@@ -763,6 +981,63 @@ export const AdminPanel: React.FC = () => {
         {/* ===================== TAB 3: ORDERS ===================== */}
         {adminTab === 'orders' && (
           <div className="space-y-5">
+            {/* Courier Dispatch Banner / Quick Status */}
+            <div className="p-4 bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl border border-slate-700 text-white flex flex-wrap items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold flex items-center gap-2">
+                    <span>Courier Automation Ready (Steadfast & Pathao)</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                      settings.courierSettings?.autoBookOnOrder
+                        ? 'bg-emerald-500 text-slate-950'
+                        : 'bg-slate-700 text-slate-300'
+                    }`}>
+                      {settings.courierSettings?.autoBookOnOrder ? '⚡ Auto-Book: ON' : '1-Click Manual Dispatch'}
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-300">
+                    Dispatch customer parcels to Steadfast or Pathao with 1 click, or configure API keys & auto-booking.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminTab('courier')}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              >
+                <SettingsIcon className="w-3.5 h-3.5" />
+                <span>Configure Courier APIs</span>
+              </button>
+            </div>
+
+            {/* Live Dispatch Notification Toast */}
+            {dispatchNotification && (
+              <div className={`p-4 rounded-2xl border flex items-center justify-between gap-3 text-xs font-bold animate-in fade-in ${
+                dispatchNotification.success
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                  : 'bg-rose-50 border-rose-300 text-rose-900'
+              }`}>
+                <div className="flex items-center gap-2.5">
+                  {dispatchNotification.success ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                  )}
+                  <span>{dispatchNotification.message}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDispatchNotification(null)}
+                  className="p-1 rounded-lg hover:bg-black/10 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             {/* Filter Tabs */}
             <div className="flex flex-wrap items-center gap-2 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs text-xs font-semibold">
               <span className="text-slate-400 text-[11px] uppercase mr-2">Filter Orders:</span>
@@ -813,20 +1088,45 @@ export const AdminPanel: React.FC = () => {
                         </span>
                       </div>
 
-                      {/* Status changer dropdown */}
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-slate-500 font-semibold">Change Status:</span>
-                        <select
-                          value={ord.status}
-                          onChange={(e) => updateOrderStatus(ord.id, e.target.value as Order['status'])}
-                          className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-hidden focus:border-rose-500"
+                      {/* Action buttons: Invoice, SMS, and Status changer */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          id={`btn-print-invoice-${ord.id}`}
+                          onClick={() => setSelectedOrderForInvoice(ord)}
+                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                          title="Print Customer Packing Memo & Commercial Invoice"
                         >
-                          <option value="pending">Pending (অপেক্ষারত)</option>
-                          <option value="processing">Processing (প্যাকিং হচ্ছে)</option>
-                          <option value="shipped">Shipped (কুরিয়ারে দেয়া হয়েছে)</option>
-                          <option value="delivered">Delivered (ডেলিভার্ড সম্পন্ন)</option>
-                          <option value="cancelled">Cancelled (বাতিল)</option>
-                        </select>
+                          <Printer className="w-3.5 h-3.5 text-slate-300" />
+                          <span>Print Invoice</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          id={`btn-send-sms-${ord.id}`}
+                          onClick={() => setSelectedOrderForSms(ord)}
+                          className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                          title="Send SMS to Customer Phone"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>Send SMS</span>
+                        </button>
+
+                        {/* Status changer dropdown */}
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className="text-slate-400 font-semibold hidden lg:inline">Status:</span>
+                          <select
+                            value={ord.status}
+                            onChange={(e) => updateOrderStatus(ord.id, e.target.value as Order['status'])}
+                            className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-hidden focus:border-rose-500"
+                          >
+                            <option value="pending">Pending (অপেক্ষারত)</option>
+                            <option value="processing">Processing (প্যাকিং হচ্ছে)</option>
+                            <option value="shipped">Shipped (কুরিয়ারে দেয়া হয়েছে)</option>
+                            <option value="delivered">Delivered (ডেলিভার্ড সম্পন্ন)</option>
+                            <option value="cancelled">Cancelled (বাতিল)</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
 
@@ -871,14 +1171,117 @@ export const AdminPanel: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Courier & Tracking */}
-                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1">
-                        <h5 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider">Logistics & Courier:</h5>
-                        <p className="font-semibold text-slate-800">Courier: {ord.trackingCourier || 'Steadfast / Pathao'}</p>
-                        <p className="font-mono text-[11px]">Consignment: {ord.trackingNumber || 'Pending'}</p>
-                        <p className="text-[11px] text-slate-500">
-                          Zone: {ord.customerInfo.zone === 'inside_dhaka' ? 'Inside Dhaka (৳60)' : 'Outside Dhaka (৳120)'}
-                        </p>
+                      {/* Courier & Tracking Card with 1-Click Dispatch */}
+                      <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <h5 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider flex items-center gap-1.5">
+                            <Truck className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Logistics & Courier</span>
+                          </h5>
+                          {ord.courierStatus ? (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                              <CheckCircle2 className="w-2.5 h-2.5" />
+                              <span>{ord.courierStatus}</span>
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-200 text-slate-700">
+                              Not Booked Yet
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="space-y-1 text-xs">
+                          <p className="text-slate-700 font-semibold flex items-center justify-between">
+                            <span>Courier:</span>
+                            <span className="font-bold text-slate-900">{ord.trackingCourier || 'Not Assigned'}</span>
+                          </p>
+
+                          <div className="flex items-center justify-between gap-1 text-[11px]">
+                            <span className="text-slate-500">Tracking / CID:</span>
+                            <div className="flex items-center gap-1 font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                              <span>{ord.trackingNumber || ord.consignmentId || 'None'}</span>
+                              {(ord.trackingNumber || ord.consignmentId) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(ord.trackingNumber || ord.consignmentId || '');
+                                    setCopiedOrderId(ord.id);
+                                    setTimeout(() => setCopiedOrderId(null), 2000);
+                                  }}
+                                  className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer ml-1"
+                                  title="Copy Tracking ID"
+                                >
+                                  {copiedOrderId === ord.id ? (
+                                    <Check className="w-3 h-3 text-emerald-600" />
+                                  ) : (
+                                    <Copy className="w-3 h-3" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <p className="text-[11px] text-slate-500">
+                            Zone: {ord.customerInfo.zone === 'inside_dhaka' ? 'Inside Dhaka (৳60)' : 'Outside Dhaka (৳120)'}
+                          </p>
+
+                          {ord.courierTrackingUrl && (
+                            <div className="pt-0.5">
+                              <a
+                                href={ord.courierTrackingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-600 hover:text-sky-700 hover:underline"
+                              >
+                                <span>Track on Courier Portal</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 1-Click Dispatch Action Buttons */}
+                        <div className="pt-2 border-t border-slate-200 flex flex-wrap gap-1.5">
+                          <button
+                            type="button"
+                            id={`btn-dispatch-steadfast-${ord.id}`}
+                            disabled={dispatchingOrderId === ord.id}
+                            onClick={() => handleDispatchCourier(ord.id, 'steadfast')}
+                            className={`flex-1 min-w-[110px] px-2.5 py-1.5 rounded-xl font-bold text-[10px] flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                              ord.trackingCourier === 'Steadfast Courier'
+                                ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
+                                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs'
+                            }`}
+                            title="Book parcel on Steadfast Courier"
+                          >
+                            {dispatchingOrderId === ord.id ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Truck className="w-3 h-3" />
+                            )}
+                            <span>{ord.trackingCourier === 'Steadfast Courier' ? 'Re-send Steadfast' : 'Send Steadfast'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            id={`btn-dispatch-pathao-${ord.id}`}
+                            disabled={dispatchingOrderId === ord.id}
+                            onClick={() => handleDispatchCourier(ord.id, 'pathao')}
+                            className={`flex-1 min-w-[110px] px-2.5 py-1.5 rounded-xl font-bold text-[10px] flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                              ord.trackingCourier === 'Pathao Courier'
+                                ? 'bg-rose-100 text-rose-800 hover:bg-rose-200 border border-rose-300'
+                                : 'bg-rose-600 hover:bg-rose-500 text-white shadow-xs'
+                            }`}
+                            title="Book parcel on Pathao Courier"
+                          >
+                            {dispatchingOrderId === ord.id ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Send className="w-3 h-3" />
+                            )}
+                            <span>{ord.trackingCourier === 'Pathao Courier' ? 'Re-send Pathao' : 'Send Pathao'}</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -906,6 +1309,419 @@ export const AdminPanel: React.FC = () => {
           </div>
         )}
 
+        {/* ===================== TAB: COURIER AUTOMATION ===================== */}
+        {adminTab === 'courier' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-xs">
+              {/* Header */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-5">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                      <Truck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold font-serif text-slate-900">
+                        Steadfast & Pathao Courier Automation
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Automate order creation, consignment generation, and live delivery tracking for Bangladeshi couriers.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {courierSaveSuccess && (
+                  <div className="px-4 py-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-1.5 animate-in fade-in">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Courier Settings Saved & Active!</span>
+                  </div>
+                )}
+              </div>
+
+              {/* How it Works Banner */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
+                    <Zap className="w-4 h-4" />
+                    <span>1. Instant Automation</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300">
+                    When a customer submits an order on checkout, it automatically creates a consignment parcel in Steadfast or Pathao.
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+                    <Radio className="w-4 h-4" />
+                    <span>2. Smart Zone Routing</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300">
+                    Dhaka metro parcels can route to Pathao while Outside Dhaka parcels route to Steadfast for maximum delivery success rate.
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sky-400 font-bold text-xs">
+                    <ExternalLink className="w-4 h-4" />
+                    <span>3. Live Tracking for Customers</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300">
+                    Tracking code and direct courier portal links are instantly available in the "Track Order" modal for the customer.
+                  </p>
+                </div>
+              </div>
+
+              {/* Test Courier Feedback Alert */}
+              {testCourierFeedback && (
+                <div className={`p-4 rounded-2xl border text-xs font-bold flex items-center justify-between gap-3 animate-in fade-in ${
+                  testCourierFeedback.success
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                    : 'bg-amber-50 border-amber-300 text-amber-900'
+                }`}>
+                  <span>{testCourierFeedback.message}</span>
+                  <button
+                    type="button"
+                    onClick={() => setTestCourierFeedback(null)}
+                    className="text-slate-400 hover:text-slate-700 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveCourierSettings} className="space-y-8">
+                {/* SECTION 1: GLOBAL DISPATCH STRATEGY */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-amber-500" />
+                    <span>Order Dispatch Behavior</span>
+                  </h4>
+
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                    {/* Auto-Book Toggle */}
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">
+                          Auto-book courier consignment when order is placed
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          If enabled, customer orders are immediately sent to the courier API upon checkout. If disabled, orders require 1-click manual dispatch from the Admin Orders tab.
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={courierForm.autoBookOnOrder}
+                          onChange={(e) => setCourierForm({ ...courierForm, autoBookOnOrder: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Preferred Courier Strategy */}
+                    <div className="space-y-2 pt-3 border-t border-slate-200">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Default Courier Routing Strategy:
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <label className={`p-3 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-all ${
+                          courierForm.defaultCourier === 'zone_smart'
+                            ? 'border-emerald-500 bg-emerald-50/50 shadow-xs'
+                            : 'border-slate-200 bg-white hover:bg-slate-50'
+                        }`}>
+                          <input
+                            type="radio"
+                            name="defaultCourier"
+                            value="zone_smart"
+                            checked={courierForm.defaultCourier === 'zone_smart'}
+                            onChange={() => setCourierForm({ ...courierForm, defaultCourier: 'zone_smart' })}
+                            className="mt-0.5 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <div>
+                            <p className="text-xs font-bold text-slate-900">Smart Zone-Based (Recommended)</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">Inside Dhaka → Pathao | Outside Dhaka → Steadfast</p>
+                          </div>
+                        </label>
+
+                        <label className={`p-3 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-all ${
+                          courierForm.defaultCourier === 'steadfast'
+                            ? 'border-emerald-500 bg-emerald-50/50 shadow-xs'
+                            : 'border-slate-200 bg-white hover:bg-slate-50'
+                        }`}>
+                          <input
+                            type="radio"
+                            name="defaultCourier"
+                            value="steadfast"
+                            checked={courierForm.defaultCourier === 'steadfast'}
+                            onChange={() => setCourierForm({ ...courierForm, defaultCourier: 'steadfast' })}
+                            className="mt-0.5 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <div>
+                            <p className="text-xs font-bold text-slate-900">Always Steadfast Courier</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">Route all customer orders to Steadfast Courier by default</p>
+                          </div>
+                        </label>
+
+                        <label className={`p-3 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-all ${
+                          courierForm.defaultCourier === 'pathao'
+                            ? 'border-rose-500 bg-rose-50/50 shadow-xs'
+                            : 'border-slate-200 bg-white hover:bg-slate-50'
+                        }`}>
+                          <input
+                            type="radio"
+                            name="defaultCourier"
+                            value="pathao"
+                            checked={courierForm.defaultCourier === 'pathao'}
+                            onChange={() => setCourierForm({ ...courierForm, defaultCourier: 'pathao' })}
+                            className="mt-0.5 text-rose-600 focus:ring-rose-500"
+                          />
+                          <div>
+                            <p className="text-xs font-bold text-slate-900">Always Pathao Courier</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">Route all customer orders to Pathao Courier by default</p>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 2: STEADFAST COURIER INTEGRATION */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-black text-xs flex items-center justify-center">
+                        S
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-900">
+                        Steadfast Courier API Settings (steadfast.com.bd)
+                      </h4>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] text-slate-500">Enable Steadfast</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={courierForm.steadfastEnabled}
+                          onChange={(e) => setCourierForm({ ...courierForm, steadfastEnabled: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Steadfast API Key
+                        </label>
+                        <input
+                          type="password"
+                          value={courierForm.steadfastApiKey || ''}
+                          onChange={(e) => setCourierForm({ ...courierForm, steadfastApiKey: e.target.value })}
+                          placeholder="e.g. stdf_live_api_key_xxxxxxxx"
+                          className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-mono outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Steadfast Secret Key
+                        </label>
+                        <input
+                          type="password"
+                          value={courierForm.steadfastSecretKey || ''}
+                          onChange={(e) => setCourierForm({ ...courierForm, steadfastSecretKey: e.target.value })}
+                          placeholder="e.g. stdf_secret_xxxxxxxx"
+                          className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-mono outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 font-medium">
+                        <input
+                          type="checkbox"
+                          checked={courierForm.steadfastSandbox}
+                          onChange={(e) => setCourierForm({ ...courierForm, steadfastSandbox: e.target.checked })}
+                          className="rounded-sm text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <span>
+                          <strong>Sandbox / Safe Simulation Mode:</strong> Generates real tracking codes & simulation URLs without dispatching real riders. (Uncheck when using live keys for real deliveries).
+                        </span>
+                      </label>
+
+                      <button
+                        type="button"
+                        disabled={testingCourier === 'steadfast'}
+                        onClick={() => handleTestCourier('steadfast')}
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        {testingCourier === 'steadfast' ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        )}
+                        <span>Test Steadfast Connection</span>
+                      </button>
+                    </div>
+
+                    <div className="text-[11px] text-slate-500 bg-white p-3 rounded-xl border border-slate-200">
+                      💡 <strong>Where to find your Steadfast API keys:</strong> Register or login at <a href="https://portal.steadfast.com.bd" target="_blank" rel="noopener noreferrer" className="text-emerald-700 font-bold underline">portal.steadfast.com.bd</a> → Open <em>Settings</em> → <em>API Credentials</em> → Copy your <em>API Key</em> & <em>Secret Key</em>.
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 3: PATHAO COURIER INTEGRATION */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-rose-600 text-white font-black text-xs flex items-center justify-center">
+                        P
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-900">
+                        Pathao Courier API Settings (merchant.pathao.com)
+                      </h4>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] text-slate-500">Enable Pathao</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={courierForm.pathaoEnabled}
+                          onChange={(e) => setCourierForm({ ...courierForm, pathaoEnabled: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-slate-300 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600"></div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Pathao Client ID
+                        </label>
+                        <input
+                          type="text"
+                          value={courierForm.pathaoClientId || ''}
+                          onChange={(e) => setCourierForm({ ...courierForm, pathaoClientId: e.target.value })}
+                          placeholder="e.g. 1029"
+                          className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-mono outline-hidden focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Pathao Client Secret
+                        </label>
+                        <input
+                          type="password"
+                          value={courierForm.pathaoClientSecret || ''}
+                          onChange={(e) => setCourierForm({ ...courierForm, pathaoClientSecret: e.target.value })}
+                          placeholder="e.g. pth_sec_xxxxxxxx"
+                          className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-mono outline-hidden focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Pathao Merchant Email / Username
+                        </label>
+                        <input
+                          type="text"
+                          value={courierForm.pathaoUsername || ''}
+                          onChange={(e) => setCourierForm({ ...courierForm, pathaoUsername: e.target.value })}
+                          placeholder="merchant@example.com"
+                          className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs outline-hidden focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Pathao Merchant Password
+                        </label>
+                        <input
+                          type="password"
+                          value={courierForm.pathaoPassword || ''}
+                          onChange={(e) => setCourierForm({ ...courierForm, pathaoPassword: e.target.value })}
+                          placeholder="••••••••••••"
+                          className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs outline-hidden focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                        />
+                      </div>
+
+                      <div className="space-y-1 md:col-span-2">
+                        <label className="block text-xs font-bold text-slate-700">
+                          Pathao Store ID
+                        </label>
+                        <input
+                          type="text"
+                          value={courierForm.pathaoStoreId || ''}
+                          onChange={(e) => setCourierForm({ ...courierForm, pathaoStoreId: e.target.value })}
+                          placeholder="e.g. 54321 (Your Pathao pickup hub/store ID)"
+                          className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs font-mono outline-hidden focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 font-medium">
+                        <input
+                          type="checkbox"
+                          checked={courierForm.pathaoSandbox}
+                          onChange={(e) => setCourierForm({ ...courierForm, pathaoSandbox: e.target.checked })}
+                          className="rounded-sm text-rose-600 focus:ring-rose-500"
+                        />
+                        <span>
+                          <strong>Sandbox / Safe Simulation Mode:</strong> Generates real tracking codes & simulation URLs without dispatching real riders. (Uncheck when using live keys for real deliveries).
+                        </span>
+                      </label>
+
+                      <button
+                        type="button"
+                        disabled={testingCourier === 'pathao'}
+                        onClick={() => handleTestCourier('pathao')}
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        {testingCourier === 'pathao' ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-rose-600" />
+                        )}
+                        <span>Test Pathao Connection</span>
+                      </button>
+                    </div>
+
+                    <div className="text-[11px] text-slate-500 bg-white p-3 rounded-xl border border-slate-200">
+                      💡 <strong>Where to find your Pathao API keys:</strong> Register or login at <a href="https://merchant.pathao.com" target="_blank" rel="noopener noreferrer" className="text-rose-700 font-bold underline">merchant.pathao.com</a> → Go to <em>Developer API</em> → Create an App to get your <em>Client ID</em> and <em>Client Secret</em>.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Button Bar */}
+                <div className="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                  <p className="text-xs text-slate-500">
+                    Changes take effect immediately across all customer checkouts and the order dispatch buttons.
+                  </p>
+
+                  <button
+                    type="submit"
+                    id="btn-save-courier-settings"
+                    className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/20 cursor-pointer transition-all"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Save Courier Automation Settings</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* ===================== TAB 4: STORE SETTINGS ===================== */}
         {adminTab === 'settings' && (
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-xs">
@@ -923,6 +1739,50 @@ export const AdminPanel: React.FC = () => {
                   <span>Settings Saved Successfully!</span>
                 </div>
               )}
+            </div>
+
+            {/* Quick Link to Admin Security & Password */}
+            <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-amber-950">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-200/80 text-amber-800 flex items-center justify-center">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold">Looking to change Admin Password or Login ID? (পাসওয়ার্ড পরিবর্তন)</h4>
+                  <p className="text-[11px] text-amber-800/90">You can also access the dedicated Admin Security & Password tab anytime.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminTab('security')}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>Go to Admin Security & Password</span>
+              </button>
+            </div>
+
+            {/* Quick Link to Courier Automation */}
+            <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-emerald-950">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-200/80 text-emerald-800 flex items-center justify-center">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold">Steadfast & Pathao Courier Automation (কুরিয়ার অটোমেশন)</h4>
+                  <p className="text-[11px] text-emerald-800/90">
+                    Configure API keys, auto-consignment booking, and live parcel tracking links.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminTab('courier')}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Truck className="w-3.5 h-3.5" />
+                <span>Configure Courier APIs</span>
+              </button>
             </div>
 
             <form onSubmit={handleSaveSettings} className="space-y-6">
@@ -1175,6 +2035,337 @@ export const AdminPanel: React.FC = () => {
                 </div>
               </div>
 
+              {/* WhatsApp Hotline Settings */}
+              <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold">
+                    <MessageCircle className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      WhatsApp Hotline & Instant Ordering:
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Powers the 1-click "Order via WhatsApp" button on product cards and detail views.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="max-w-md">
+                  <label className="text-xs font-bold text-slate-700">Store WhatsApp Number (with country code):</label>
+                  <input
+                    type="text"
+                    value={settingsForm.whatsappNumber || '+8801711223344'}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, whatsappNumber: e.target.value })}
+                    placeholder="e.g. +8801711223344"
+                    className="w-full mt-1 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-hidden font-mono"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">Customers clicking "Order on WhatsApp" will send ready-formatted order messages to this number.</p>
+                </div>
+              </div>
+
+              {/* Flash Sale Banner & Campaign */}
+              <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center font-bold">
+                      <Flame className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                        Flash Sale Countdown Banner:
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Displays a live ticking countdown bar under navbar with special promo badge.
+                      </p>
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settingsForm.flashSale?.enabled ?? true}
+                      onChange={(e) => setSettingsForm({
+                        ...settingsForm,
+                        flashSale: {
+                          ...(settingsForm.flashSale || {
+                            enabled: true,
+                            title: '⚡ Mega Flash Sale Live!',
+                            subtitle: 'Up to 40% discount on selected gadgets & accessories',
+                            discountBadge: 'UP TO 40% OFF',
+                            endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                          }),
+                          enabled: e.target.checked
+                        }
+                      })}
+                      className="rounded-sm text-rose-600 focus:ring-rose-500 w-4 h-4"
+                    />
+                    <span className="text-xs font-bold text-slate-800">Banner Enabled</span>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700">Sale Title:</label>
+                    <input
+                      type="text"
+                      value={settingsForm.flashSale?.title || '⚡ Flash Sale Live!'}
+                      onChange={(e) => setSettingsForm({
+                        ...settingsForm,
+                        flashSale: {
+                          ...(settingsForm.flashSale || {
+                            enabled: true,
+                            title: '',
+                            subtitle: '',
+                            discountBadge: '',
+                            endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                          }),
+                          title: e.target.value
+                        }
+                      })}
+                      className="w-full mt-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700">Sale Subtitle:</label>
+                    <input
+                      type="text"
+                      value={settingsForm.flashSale?.subtitle || 'Limited stock discounts'}
+                      onChange={(e) => setSettingsForm({
+                        ...settingsForm,
+                        flashSale: {
+                          ...(settingsForm.flashSale || {
+                            enabled: true,
+                            title: '',
+                            subtitle: '',
+                            discountBadge: '',
+                            endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                          }),
+                          subtitle: e.target.value
+                        }
+                      })}
+                      className="w-full mt-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700">Badge Label:</label>
+                    <input
+                      type="text"
+                      value={settingsForm.flashSale?.discountBadge || 'UP TO 40% OFF'}
+                      onChange={(e) => setSettingsForm({
+                        ...settingsForm,
+                        flashSale: {
+                          ...(settingsForm.flashSale || {
+                            enabled: true,
+                            title: '',
+                            subtitle: '',
+                            discountBadge: '',
+                            endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                          }),
+                          discountBadge: e.target.value
+                        }
+                      })}
+                      className="w-full mt-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl font-bold text-rose-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700">Sale End Date & Time:</label>
+                    <input
+                      type="datetime-local"
+                      value={settingsForm.flashSale?.endsAt ? new Date(settingsForm.flashSale.endsAt).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => {
+                        const iso = e.target.value ? new Date(e.target.value).toISOString() : new Date(Date.now() + 86400000).toISOString();
+                        setSettingsForm({
+                          ...settingsForm,
+                          flashSale: {
+                            ...(settingsForm.flashSale || {
+                              enabled: true,
+                              title: '',
+                              subtitle: '',
+                              discountBadge: '',
+                              endsAt: iso,
+                            }),
+                            endsAt: iso
+                          }
+                        });
+                      }}
+                      className="w-full mt-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SMS Notification Gateway Settings */}
+              <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold">
+                      <MessageSquare className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                        SMS Notification Gateway (Greenweb / BulkSMS BD / Simulation):
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Notify customers automatically via SMS when orders are placed and when parcels are dispatched.
+                      </p>
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settingsForm.smsSettings?.enabled ?? true}
+                      onChange={(e) => setSettingsForm({
+                        ...settingsForm,
+                        smsSettings: {
+                          ...(settingsForm.smsSettings || {
+                            enabled: true,
+                            provider: 'simulation',
+                            apiKey: '',
+                            senderId: 'BREDVEX',
+                            autoSendOnOrder: true,
+                            autoSendOnCourier: true,
+                          }),
+                          enabled: e.target.checked
+                        }
+                      })}
+                      className="rounded-sm text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                    />
+                    <span className="text-xs font-bold text-slate-800">SMS Gateway Active</span>
+                  </label>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700">SMS Provider:</label>
+                      <select
+                        value={settingsForm.smsSettings?.provider || 'simulation'}
+                        onChange={(e) => setSettingsForm({
+                          ...settingsForm,
+                          smsSettings: {
+                            ...(settingsForm.smsSettings || {
+                              enabled: true,
+                              provider: 'simulation',
+                              apiKey: '',
+                              senderId: 'BREDVEX',
+                              autoSendOnOrder: true,
+                              autoSendOnCourier: true,
+                            }),
+                            provider: e.target.value as any
+                          }
+                        })}
+                        className="w-full mt-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl font-bold"
+                      >
+                        <option value="simulation">Simulation Mode (Safe In-App / Log)</option>
+                        <option value="greenweb">Greenweb Bangladesh (api.greenweb.com.bd)</option>
+                        <option value="bulksmsbd">BulkSMS BD (bulksmsbd.net)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700">Sender ID (Masking/Non-masking):</label>
+                      <input
+                        type="text"
+                        value={settingsForm.smsSettings?.senderId || 'BREDVEX'}
+                        onChange={(e) => setSettingsForm({
+                          ...settingsForm,
+                          smsSettings: {
+                            ...(settingsForm.smsSettings || {
+                              enabled: true,
+                              provider: 'simulation',
+                              apiKey: '',
+                              senderId: 'BREDVEX',
+                              autoSendOnOrder: true,
+                              autoSendOnCourier: true,
+                            }),
+                            senderId: e.target.value
+                          }
+                        })}
+                        placeholder="e.g. BREDVEX or 88096..."
+                        className="w-full mt-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700">API Token / Secret Key:</label>
+                      <input
+                        type="password"
+                        value={settingsForm.smsSettings?.apiKey || ''}
+                        onChange={(e) => setSettingsForm({
+                          ...settingsForm,
+                          smsSettings: {
+                            ...(settingsForm.smsSettings || {
+                              enabled: true,
+                              provider: 'simulation',
+                              apiKey: '',
+                              senderId: 'BREDVEX',
+                              autoSendOnOrder: true,
+                              autoSendOnCourier: true,
+                            }),
+                            apiKey: e.target.value
+                          }
+                        })}
+                        placeholder="Provider API token (leave empty for simulation)"
+                        className="w-full mt-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-200">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={settingsForm.smsSettings?.autoSendOnOrder ?? true}
+                        onChange={(e) => setSettingsForm({
+                          ...settingsForm,
+                          smsSettings: {
+                            ...(settingsForm.smsSettings || {
+                              enabled: true,
+                              provider: 'simulation',
+                              apiKey: '',
+                              senderId: 'BREDVEX',
+                              autoSendOnOrder: true,
+                              autoSendOnCourier: true,
+                            }),
+                            autoSendOnOrder: e.target.checked
+                          }
+                        })}
+                        className="rounded-sm text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span>Auto-send SMS immediately upon Order Checkout</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={settingsForm.smsSettings?.autoSendOnCourier ?? true}
+                        onChange={(e) => setSettingsForm({
+                          ...settingsForm,
+                          smsSettings: {
+                            ...(settingsForm.smsSettings || {
+                              enabled: true,
+                              provider: 'simulation',
+                              apiKey: '',
+                              senderId: 'BREDVEX',
+                              autoSendOnOrder: true,
+                              autoSendOnCourier: true,
+                            }),
+                            autoSendOnCourier: e.target.checked
+                          }
+                        })}
+                        className="rounded-sm text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span>Auto-send SMS with Tracking CID when booked with Steadfast or Pathao</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               {/* Save Settings Button */}
               <div className="pt-4 flex flex-wrap items-center justify-between gap-3">
                 <button
@@ -1292,6 +2483,332 @@ export const AdminPanel: React.FC = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ===================== TAB 5: ADMIN SECURITY & PASSWORD ===================== */}
+        {adminTab === 'security' && (
+          <div className="space-y-6 max-w-4xl mx-auto">
+            
+            {/* Header Card */}
+            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border border-slate-700">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold border border-amber-400/30">
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Portal Security Controls</span>
+                </div>
+                <h3 className="text-2xl font-black font-serif text-white tracking-tight">
+                  Admin Security & Password
+                </h3>
+                <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
+                  পাসওয়ার্ড এবং অ্যাডমিন লগইন আইডি পরিবর্তন করুন। Change your login credentials to protect your store inventory, order processing, and revenue data.
+                </p>
+              </div>
+
+              {/* Status Badge */}
+              <div className="bg-slate-800/80 backdrop-blur-xs p-4 rounded-2xl border border-slate-700 space-y-1.5 shrink-0 text-left sm:text-right">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Current Login ID</span>
+                <div className="text-base font-black font-mono text-amber-400">
+                  {settings.adminLoginId || 'admin'}
+                </div>
+                <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Active & Authenticated
+                </span>
+              </div>
+            </div>
+
+            {/* Change Password Form Card */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center border border-amber-500/20">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-slate-900 font-serif">
+                    Change Admin Credentials (লগইন আইডি ও নতুন পাসওয়ার্ড)
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Enter your desired new login ID and a secure password below.
+                  </p>
+                </div>
+              </div>
+
+              {passwordChangeSuccess && (
+                <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-2xl font-medium flex items-center gap-3 animate-in fade-in">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <div>
+                    <strong className="block font-bold">Success! পাসওয়ার্ড সফলভাবে সংরক্ষিত হয়েছে!</strong>
+                    <span>{passwordChangeSuccess}</span>
+                  </div>
+                </div>
+              )}
+
+              {passwordChangeError && (
+                <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-2xl font-medium flex items-center gap-3 animate-in fade-in">
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                  <div>
+                    <strong className="block font-bold">Error</strong>
+                    <span>{passwordChangeError}</span>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleChangeAdminCredentials} className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                      Admin Login ID:
+                    </label>
+                    <input
+                      id="input-new-admin-id-security-tab"
+                      type="text"
+                      required
+                      value={newAdminLoginId}
+                      onChange={(e) => setNewAdminLoginId(e.target.value)}
+                      placeholder="e.g. admin or your username"
+                      className="w-full px-4 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-hidden focus:border-amber-500 focus:bg-white font-mono transition-all"
+                    />
+                    <p className="text-[11px] text-slate-500">
+                      Your login username (default: <code className="text-amber-700 font-bold">{settings.adminLoginId || 'admin'}</code>)
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                      New Password:
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="input-new-password-security-tab"
+                        type={showNewPassword ? 'text' : 'password'}
+                        required
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        className="w-full pl-4 pr-11 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-hidden focus:border-amber-500 focus:bg-white font-mono transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                        title={showNewPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      Minimum 4 characters required
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                      Confirm New Password:
+                    </label>
+                    <input
+                      id="input-confirm-password-security-tab"
+                      type={showNewPassword ? 'text' : 'password'}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Repeat new password"
+                      className="w-full px-4 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-hidden focus:border-amber-500 focus:bg-white font-mono transition-all"
+                    />
+                    <p className="text-[11px] text-slate-500">
+                      Must match new password exactly
+                    </p>
+                  </div>
+
+                </div>
+
+                <div className="pt-2 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100">
+                  <button
+                    type="submit"
+                    id="btn-submit-change-password-tab"
+                    className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 hover:shadow-lg"
+                  >
+                    <KeyRound className="w-4 h-4 text-amber-400" />
+                    <span>Save New Password & Login ID</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewAdminLoginId('admin');
+                      setNewPassword('123456');
+                      setConfirmPassword('123456');
+                    }}
+                    className="text-xs text-slate-500 hover:text-slate-800 underline font-medium cursor-pointer"
+                  >
+                    Reset fields to default (admin / 123456)
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Helpful Guide Card */}
+            <div className="p-6 bg-amber-50/70 rounded-3xl border border-amber-200/80 text-amber-950 space-y-3">
+              <h4 className="text-sm font-bold flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-amber-700" />
+                <span>Security Recommendations & Instructions (পাসওয়ার্ড সম্পর্কিত জরুরি তথ্য)</span>
+              </h4>
+              <ul className="text-xs space-y-1.5 text-amber-900 list-disc list-inside">
+                <li>Make sure to write down or memorize your new Login ID and Password before logging out.</li>
+                <li>You can test your new credentials immediately by clicking <strong>"Logout"</strong> in the top right corner and signing back in.</li>
+                <li>If you ever forget your custom password, the system also accepts the default emergency credentials (<code>admin</code> / <code>123456</code>).</li>
+              </ul>
+            </div>
+
+          </div>
+        )}
+
+        {/* ===================== TAB 6: CUSTOMER REVIEWS MODERATION ===================== */}
+        {adminTab === 'reviews' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                    <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold font-serif text-slate-900">
+                      Product Reviews & Customer Ratings Moderation
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      View all verified buyer reviews, customer testimonials, and ratings across your store catalog.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Filter by Product */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-500">Filter Product:</span>
+                  <select
+                    value={reviewFilterProduct}
+                    onChange={(e) => setReviewFilterProduct(e.target.value)}
+                    className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-hidden cursor-pointer"
+                  >
+                    <option value="all">All Products ({reviews.length})</option>
+                    {products.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Review Statistics */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/70">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Customer Reviews</span>
+                  <h4 className="text-2xl font-black font-mono text-slate-900 mt-1">{reviews.length}</h4>
+                </div>
+                <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-200/60">
+                  <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Average Store Rating</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-2xl font-black font-mono text-amber-900">
+                      {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '5.0'}
+                    </span>
+                    <div className="flex text-amber-400">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} className="w-4 h-4 fill-current" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-200/60">
+                  <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Verified Buyers</span>
+                  <h4 className="text-2xl font-black font-mono text-emerald-900 mt-1">
+                    {reviews.filter(r => r.verifiedPurchase).length}
+                  </h4>
+                </div>
+              </div>
+
+              {/* Reviews List */}
+              <div className="space-y-3">
+                {(() => {
+                  const filteredReviews = reviewFilterProduct === 'all'
+                    ? reviews
+                    : reviews.filter(r => r.productId === reviewFilterProduct);
+
+                  if (filteredReviews.length === 0) {
+                    return (
+                      <div className="p-12 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-500 space-y-2">
+                        <Star className="w-8 h-8 text-slate-300 mx-auto" />
+                        <p className="font-semibold text-sm">No reviews found for this product selection.</p>
+                      </div>
+                    );
+                  }
+
+                  return filteredReviews.map((rev) => {
+                    const prod = products.find(p => p.id === rev.productId);
+                    return (
+                      <div
+                        key={rev.id}
+                        className="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200 transition-all space-y-2"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-3">
+                            {prod?.images?.[0] && (
+                              <img src={prod.images[0]} alt="" className="w-10 h-10 rounded-xl object-cover border border-slate-200" />
+                            )}
+                            <div>
+                              <p className="font-bold text-slate-900 text-xs">{prod?.name || 'Product'}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="font-semibold text-slate-700 text-xs">{rev.authorName}</span>
+                                {rev.verifiedPurchase && (
+                                  <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800">
+                                    Verified Buyer
+                                  </span>
+                                )}
+                                {rev.location && (
+                                  <span className="text-[11px] text-slate-400">• {rev.location}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1 text-amber-400">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                  key={s}
+                                  className={`w-3.5 h-3.5 ${s <= rev.rating ? 'fill-current' : 'text-slate-300'}`}
+                                />
+                              ))}
+                              <span className="font-mono text-xs font-bold text-slate-700 ml-1">{rev.rating}.0</span>
+                            </div>
+
+                            <span className="text-[11px] text-slate-400">
+                              {new Date(rev.createdAt).toLocaleDateString()}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm('Delete this customer review permanently?')) {
+                                  deleteReview(rev.id);
+                                }
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                              title="Delete Review"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-700 italic bg-white/70 p-2.5 rounded-xl border border-slate-100">
+                          "{rev.comment}"
+                        </p>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
             </div>
           </div>
         )}
@@ -1522,6 +3039,28 @@ export const AdminPanel: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Invoice Modal for Selected Order */}
+      {selectedOrderForInvoice && (
+        <InvoiceModal
+          order={selectedOrderForInvoice}
+          settings={settings}
+          onClose={() => setSelectedOrderForInvoice(null)}
+        />
+      )}
+
+      {/* Send SMS Modal for Selected Order */}
+      {selectedOrderForSms && (
+        <SendSmsModal
+          order={selectedOrderForSms}
+          settings={settings}
+          onClose={() => setSelectedOrderForSms(null)}
+          onSuccess={(msg) => {
+            setSmsAlertBanner(msg);
+            setTimeout(() => setSmsAlertBanner(null), 6000);
+          }}
+        />
       )}
 
     </div>

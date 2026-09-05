@@ -1,6 +1,6 @@
 {
   "name": "BREDVEX",
-  "description": "Modern E-Commerce platform with multi-category shopping, Bangladeshi payment gateways (bKash, Nagad, Rocket, COD), and a comprehensive Admin Panel.",
+  "description": "Modern E-Commerce platform with multi-category shopping, Bangladeshi payment gateways (bKash, Nagad, Rocket, COD), Steadfast & Pathao courier automation, and a comprehensive Admin Panel.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

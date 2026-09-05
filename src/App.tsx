@@ -14,6 +14,7 @@ import { TrackOrderModal } from './components/TrackOrderModal';
 import { WishlistModal } from './components/WishlistModal';
 import { AdminPanel } from './components/AdminPanel';
 import { Footer } from './components/Footer';
+import { FlashSaleBanner } from './components/FlashSaleBanner';
 import { INITIAL_CATEGORIES } from './data/initialData';
 import { 
   SlidersHorizontal, 
@@ -88,6 +89,7 @@ const MainShop: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
+      <FlashSaleBanner />
 
       <main className="flex-1">
         {/* Hero Section */}
