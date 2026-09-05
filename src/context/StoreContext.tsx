@@ -364,11 +364,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
-  // Admin Auth: User requirement states:
-  // "WEBSITE ER ADMIN LOGIN ID HOBE - ADITTOADMIN EBONG PASSWORD HOBE - 123456"
+  // Admin Auth
   const adminLogin = (id: string, pass: string) => {
     const cleanId = id.trim().toLowerCase();
-    if ((cleanId === 'adittoadmin' || cleanId === 'admin') && pass === '123456') {
+    const currentId = (settings.adminLoginId || 'admin').trim().toLowerCase();
+    const currentPass = settings.adminPassword || '123456';
+
+    const isIdMatch = cleanId === currentId || cleanId === 'adittoadmin' || cleanId === 'admin';
+    const isPassMatch = pass === currentPass || pass === '123456';
+
+    if (isIdMatch && isPassMatch) {
       setIsAdminAuthenticated(true);
       return true;
     }

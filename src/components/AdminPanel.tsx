@@ -23,7 +23,9 @@ import {
   EyeOff,
   Truck,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  KeyRound,
+  CheckCircle2
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product, SiteSettings, Order } from '../types';
@@ -78,6 +80,14 @@ export const AdminPanel: React.FC = () => {
   // Settings form local state
   const [settingsForm, setSettingsForm] = useState<SiteSettings>(settings);
   const [saveSettingsSuccess, setSaveSettingsSuccess] = useState(false);
+
+  // Admin Security / Password Change State
+  const [newAdminLoginId, setNewAdminLoginId] = useState(settings.adminLoginId || 'admin');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState('');
+  const [passwordChangeError, setPasswordChangeError] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   // Product search in admin
   const [productSearch, setProductSearch] = useState('');
@@ -232,6 +242,44 @@ export const AdminPanel: React.FC = () => {
     updateSettings(settingsForm);
     setSaveSettingsSuccess(true);
     setTimeout(() => setSaveSettingsSuccess(false), 3000);
+  };
+
+  // Change Admin Password / ID
+  const handleChangeAdminCredentials = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordChangeError('');
+    setPasswordChangeSuccess('');
+
+    const trimmedId = newAdminLoginId.trim();
+    if (!trimmedId) {
+      setPasswordChangeError('Admin Login ID cannot be empty.');
+      return;
+    }
+
+    if (!newPassword) {
+      setPasswordChangeError('Please enter a new password.');
+      return;
+    }
+
+    if (newPassword.length < 4) {
+      setPasswordChangeError('Password must be at least 4 characters long.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordChangeError('New password and confirm password do not match.');
+      return;
+    }
+
+    updateSettings({
+      adminLoginId: trimmedId,
+      adminPassword: newPassword
+    });
+
+    setPasswordChangeSuccess('Admin Login ID and Password updated successfully! Keep your new credentials safe.');
+    setNewPassword('');
+    setConfirmPassword('');
+    setTimeout(() => setPasswordChangeSuccess(''), 5000);
   };
 
   // Metrics Calculations
@@ -1153,6 +1201,98 @@ export const AdminPanel: React.FC = () => {
               </div>
 
             </form>
+
+            {/* Admin Password & Credentials Change Card */}
+            <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-5">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 font-serif">Admin Security & Password (পাসওয়ার্ড পরিবর্তন)</h4>
+                  <p className="text-xs text-slate-500">
+                    Change your admin login ID and password to keep your portal secure.
+                  </p>
+                </div>
+              </div>
+
+              {passwordChangeSuccess && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-medium flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{passwordChangeSuccess}</span>
+                </div>
+              )}
+
+              {passwordChangeError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{passwordChangeError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleChangeAdminCredentials} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700">Admin Login ID:</label>
+                    <input
+                      type="text"
+                      required
+                      value={newAdminLoginId}
+                      onChange={(e) => setNewAdminLoginId(e.target.value)}
+                      placeholder="e.g. admin or your username"
+                      className="w-full mt-1 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-hidden focus:border-amber-500 focus:bg-white font-mono"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-0.5">Current login username</p>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700">New Password:</label>
+                    <div className="relative mt-1">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        required
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        className="w-full pl-3 pr-9 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-hidden focus:border-amber-500 focus:bg-white font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                      >
+                        {showNewPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Minimum 4 characters</p>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700">Confirm Password:</label>
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Repeat new password"
+                      className="w-full mt-1 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-hidden focus:border-amber-500 focus:bg-white font-mono"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-0.5">Must match new password</p>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-between">
+                  <button
+                    type="submit"
+                    id="btn-update-admin-password"
+                    className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Update Admin Login & Password</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 

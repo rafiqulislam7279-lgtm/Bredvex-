@@ -94,4 +94,6 @@ export interface SiteSettings {
   heroImage: string;
   facebookUrl?: string;
   whatsappNumber?: string;
+  adminLoginId?: string;
+  adminPassword?: string;
 }

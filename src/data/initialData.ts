@@ -427,7 +427,9 @@ export const INITIAL_SETTINGS: SiteSettings = {
   heroBadge: '🇧🇩 BANGLADESH NO. 1 LIFESTYLE & TECH STORE',
   heroImage: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=85',
   facebookUrl: 'https://facebook.com',
-  whatsappNumber: '+8801711223344'
+  whatsappNumber: '+8801711223344',
+  adminLoginId: 'admin',
+  adminPassword: '123456'
 };
 
 export const INITIAL_ORDERS: Order[] = [
