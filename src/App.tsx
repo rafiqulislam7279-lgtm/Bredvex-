@@ -15,6 +15,7 @@ import { WishlistModal } from './components/WishlistModal';
 import { AdminPanel } from './components/AdminPanel';
 import { Footer } from './components/Footer';
 import { FlashSaleBanner } from './components/FlashSaleBanner';
+import { WhatsAppChatButton } from './components/WhatsAppChatButton';
 import { INITIAL_CATEGORIES } from './data/initialData';
 import { 
   SlidersHorizontal, 
@@ -267,6 +268,9 @@ const MainShop: React.FC = () => {
 
       {/* Wishlist Modal */}
       <WishlistModal />
+
+      {/* Floating 1-Click WhatsApp Customer Care & Order Button */}
+      <WhatsAppChatButton />
     </div>
   );
 };
