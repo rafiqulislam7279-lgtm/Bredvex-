@@ -35,13 +35,16 @@ import {
   MessageSquare,
   Flame,
   Star,
-  MessageCircle
+  MessageCircle,
+  Tag,
+  Percent
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product, SiteSettings, Order, CourierSettings } from '../types';
 import { INITIAL_CATEGORIES } from '../data/initialData';
 import { InvoiceModal } from './InvoiceModal';
 import { SendSmsModal } from './SendSmsModal';
+import { AdminCoupons } from './AdminCoupons';
 
 export const AdminPanel: React.FC = () => {
   const {
@@ -61,7 +64,8 @@ export const AdminPanel: React.FC = () => {
     updateSettings,
     resetToDefaults,
     reviews,
-    deleteReview
+    deleteReview,
+    coupons
   } = useStore();
 
   // Login form states
@@ -71,7 +75,7 @@ export const AdminPanel: React.FC = () => {
   const [loginError, setLoginError] = useState('');
 
   // Admin tab states
-  const [adminTab, setAdminTab] = useState<'overview' | 'products' | 'orders' | 'courier' | 'settings' | 'security' | 'reviews'>('overview');
+  const [adminTab, setAdminTab] = useState<'overview' | 'products' | 'orders' | 'coupons' | 'courier' | 'settings' | 'security' | 'reviews'>('overview');
 
   // Order Invoicing & SMS Modals State
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<Order | null>(null);
@@ -628,6 +632,19 @@ export const AdminPanel: React.FC = () => {
                 {pendingOrdersCount}
               </span>
             )}
+          </button>
+
+          <button
+            id="tab-admin-coupons"
+            onClick={() => setAdminTab('coupons')}
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              adminTab === 'coupons'
+                ? 'border-amber-400 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            <Tag className="w-4 h-4 text-amber-400" />
+            <span>Coupons & Promo Codes ({coupons.length})</span>
           </button>
 
           <button
@@ -1721,6 +1738,9 @@ export const AdminPanel: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* ===================== TAB: PROMO CODES & COUPONS ===================== */}
+        {adminTab === 'coupons' && <AdminCoupons />}
 
         {/* ===================== TAB 4: STORE SETTINGS ===================== */}
         {adminTab === 'settings' && (

@@ -1,12 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, CartItem, Order, SiteSettings, CustomerInfo, PaymentMethod, ProductReview } from '../types';
-import { INITIAL_PRODUCTS, INITIAL_SETTINGS, INITIAL_ORDERS, INITIAL_REVIEWS } from '../data/initialData';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { Product, CartItem, Order, SiteSettings, CustomerInfo, PaymentMethod, ProductReview, Coupon } from '../types';
+import { INITIAL_PRODUCTS, INITIAL_SETTINGS, INITIAL_ORDERS, INITIAL_REVIEWS, INITIAL_COUPONS } from '../data/initialData';
 import { dispatchOrder, DispatchResult } from '../services/courierService';
 import { sendSmsNotification, generateOrderSmsText, generateCourierSmsText } from '../services/smsService';
 
 interface StoreContextType {
   products: Product[];
   orders: Order[];
+  coupons: Coupon[];
   settings: SiteSettings;
   cart: CartItem[];
   wishlistIds: string[];
@@ -22,6 +23,7 @@ interface StoreContextType {
   searchKeyword: string;
   selectedCategory: string;
   appliedCoupon: string | null;
+  appliedCouponData: Coupon | null;
   discountPercentage: number;
   deliveryZone: 'inside_dhaka' | 'outside_dhaka';
   
@@ -44,6 +46,13 @@ interface StoreContextType {
   clearCart: () => void;
   applyCoupon: (code: string) => { success: boolean; message: string };
   removeCoupon: () => void;
+  
+  // Coupon Management (Admin & Generator)
+  addCoupon: (coupon: Omit<Coupon, 'id' | 'createdAt' | 'timesUsed'>) => void;
+  updateCoupon: (id: string, updatedData: Partial<Coupon>) => void;
+  deleteCoupon: (id: string) => void;
+  toggleCouponStatus: (id: string) => void;
+  generatePromoCode: (prefix?: string) => string;
   
   // Wishlist operations
   toggleWishlist: (productId: string) => void;
@@ -170,11 +179,48 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [orderSuccessData, setOrderSuccessData] = useState<Order | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('bredvex_applied_coupon') || null;
+    } catch {
+      return null;
+    }
+  });
   const [discountPercentage, setDiscountPercentage] = useState(0);
   const [deliveryZone, setDeliveryZone] = useState<'inside_dhaka' | 'outside_dhaka'>('inside_dhaka');
 
+  // Promo Coupons & Discounts State
+  const [coupons, setCoupons] = useState<Coupon[]>(() => {
+    try {
+      const saved = localStorage.getItem('bredvex_coupons');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return INITIAL_COUPONS;
+  });
+
   // Persistence effects
+  useEffect(() => {
+    try {
+      localStorage.setItem('bredvex_coupons', JSON.stringify(coupons));
+    } catch (e) {
+      console.error('Failed to save coupons:', e);
+    }
+  }, [coupons]);
+
+  useEffect(() => {
+    try {
+      if (appliedCoupon) {
+        localStorage.setItem('bredvex_applied_coupon', appliedCoupon);
+      } else {
+        localStorage.removeItem('bredvex_applied_coupon');
+      }
+    } catch (e) {
+      console.error('Failed to save applied coupon:', e);
+    }
+  }, [appliedCoupon]);
+
   useEffect(() => {
     try {
       localStorage.setItem('bredvex_products', JSON.stringify(products));
@@ -233,7 +279,39 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Calculations
   const cartSubtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-  const cartDiscount = Math.round((cartSubtotal * discountPercentage) / 100);
+
+  // Active applied coupon object lookup
+  const appliedCouponData = useMemo(() => {
+    if (!appliedCoupon) return null;
+    return coupons.find(c => c.code.toUpperCase() === appliedCoupon.toUpperCase()) || null;
+  }, [appliedCoupon, coupons]);
+
+  // Dynamic discount calculation
+  const cartDiscount = useMemo(() => {
+    if (!appliedCouponData || !appliedCouponData.isActive) {
+      if (discountPercentage > 0) {
+        return Math.round((cartSubtotal * discountPercentage) / 100);
+      }
+      return 0;
+    }
+
+    // Minimum order check
+    if (appliedCouponData.minOrderAmount && cartSubtotal < appliedCouponData.minOrderAmount) {
+      return 0;
+    }
+
+    if (appliedCouponData.discountType === 'percentage') {
+      const rawDiscount = Math.round((cartSubtotal * appliedCouponData.discountValue) / 100);
+      if (appliedCouponData.maxDiscountAmount && appliedCouponData.maxDiscountAmount > 0) {
+        return Math.min(rawDiscount, appliedCouponData.maxDiscountAmount);
+      }
+      return rawDiscount;
+    } else {
+      // Fixed discount
+      return Math.min(appliedCouponData.discountValue, cartSubtotal);
+    }
+  }, [appliedCouponData, discountPercentage, cartSubtotal]);
+
   const isFreeDelivery = cartSubtotal >= settings.freeDeliveryThreshold;
   const cartShippingFee = cartSubtotal === 0 
     ? 0 
@@ -294,24 +372,103 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setDiscountPercentage(0);
   };
 
+  // Coupon Generator & Admin Operations
+  const generatePromoCode = (prefix = 'BVX') => {
+    const cleanPrefix = prefix.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || 'BVX';
+    const randomChars = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const randomNum = Math.floor(10 + Math.random() * 90);
+    return `${cleanPrefix}-${randomChars}${randomNum}`;
+  };
+
+  const addCoupon = (newCouponData: Omit<Coupon, 'id' | 'createdAt' | 'timesUsed'>) => {
+    const newCoupon: Coupon = {
+      ...newCouponData,
+      id: `cpn-${Date.now()}`,
+      code: newCouponData.code.trim().toUpperCase(),
+      timesUsed: 0,
+      createdAt: new Date().toISOString(),
+    };
+    setCoupons(prev => [newCoupon, ...prev]);
+  };
+
+  const updateCoupon = (id: string, updatedData: Partial<Coupon>) => {
+    setCoupons(prev =>
+      prev.map(c => {
+        if (c.id === id) {
+          return {
+            ...c,
+            ...updatedData,
+            code: updatedData.code ? updatedData.code.trim().toUpperCase() : c.code
+          };
+        }
+        return c;
+      })
+    );
+  };
+
+  const deleteCoupon = (id: string) => {
+    const target = coupons.find(c => c.id === id);
+    if (target && appliedCoupon && target.code.toUpperCase() === appliedCoupon.toUpperCase()) {
+      setAppliedCoupon(null);
+      setDiscountPercentage(0);
+    }
+    setCoupons(prev => prev.filter(c => c.id !== id));
+  };
+
+  const toggleCouponStatus = (id: string) => {
+    setCoupons(prev =>
+      prev.map(c => (c.id === id ? { ...c, isActive: !c.isActive } : c))
+    );
+  };
+
   const applyCoupon = (code: string) => {
     const clean = code.trim().toUpperCase();
-    if (clean === 'BREDVEX10') {
-      setAppliedCoupon('BREDVEX10');
-      setDiscountPercentage(10);
-      return { success: true, message: '🎉 Coupon BREDVEX10 applied! 10% discount added.' };
+    if (!clean) {
+      return { success: false, message: 'Please enter a coupon code.' };
     }
-    if (clean === 'EID2026' || clean === 'EID20') {
-      setAppliedCoupon('EID2026');
-      setDiscountPercentage(15);
-      return { success: true, message: '🌙 Eid Special! 15% discount applied successfully.' };
+
+    // Check dynamic coupons list
+    const found = coupons.find(c => c.code.toUpperCase() === clean);
+    if (!found) {
+      return { success: false, message: `Coupon "${clean}" not found or invalid.` };
     }
-    if (clean === 'FIRSTBUY') {
-      setAppliedCoupon('FIRSTBUY');
-      setDiscountPercentage(5);
-      return { success: true, message: '✨ First Purchase! 5% discount applied.' };
+
+    if (!found.isActive) {
+      return { success: false, message: `Coupon "${clean}" is currently disabled.` };
     }
-    return { success: false, message: 'Invalid coupon code. Try using "BREDVEX10"!' };
+
+    if (found.expiresAt) {
+      const expiry = new Date(found.expiresAt).getTime();
+      if (!isNaN(expiry) && expiry < Date.now()) {
+        return { success: false, message: `Coupon "${clean}" has expired.` };
+      }
+    }
+
+    if (found.usageLimit && found.timesUsed >= found.usageLimit) {
+      return { success: false, message: `Coupon "${clean}" usage limit has been reached.` };
+    }
+
+    if (found.minOrderAmount && cartSubtotal < found.minOrderAmount) {
+      return { 
+        success: false, 
+        message: `Minimum cart value of ৳${found.minOrderAmount.toLocaleString()} required to use "${clean}".` 
+      };
+    }
+
+    setAppliedCoupon(found.code);
+    if (found.discountType === 'percentage') {
+      setDiscountPercentage(found.discountValue);
+      return { 
+        success: true, 
+        message: `🎉 Coupon "${found.code}" applied! ${found.discountValue}% discount added.` 
+      };
+    } else {
+      setDiscountPercentage(0);
+      return { 
+        success: true, 
+        message: `🎉 Coupon "${found.code}" applied! ৳${found.discountValue.toLocaleString()} flat discount added.` 
+      };
+    }
   };
 
   const removeCoupon = () => {
@@ -400,6 +557,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return prod;
       })
     );
+
+    // Increment coupon usage if used
+    if (appliedCoupon) {
+      setCoupons(prev =>
+        prev.map(c =>
+          c.code.toUpperCase() === appliedCoupon.toUpperCase()
+            ? { ...c, timesUsed: (c.timesUsed || 0) + 1 }
+            : c
+        )
+      );
+    }
 
     setOrders(prev => [newOrder, ...prev]);
     clearCart();
@@ -594,7 +762,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         searchKeyword,
         selectedCategory,
         appliedCoupon,
+        appliedCouponData,
         discountPercentage,
+        coupons,
         deliveryZone,
         setActiveView,
         setSelectedProductForModal,
@@ -612,6 +782,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         clearCart,
         applyCoupon,
         removeCoupon,
+        addCoupon,
+        updateCoupon,
+        deleteCoupon,
+        toggleCouponStatus,
+        generatePromoCode,
         toggleWishlist,
         isInWishlist,
         addReview,

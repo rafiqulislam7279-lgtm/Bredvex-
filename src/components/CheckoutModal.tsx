@@ -22,6 +22,7 @@ export const CheckoutModal: React.FC = () => {
     cartShippingFee,
     cartDiscount,
     cartGrandTotal,
+    appliedCoupon,
     deliveryZone,
     setDeliveryZone,
     settings,
@@ -601,7 +602,7 @@ export const CheckoutModal: React.FC = () => {
                 </div>
                 {cartDiscount > 0 && (
                   <div className="flex justify-between text-emerald-600 font-medium">
-                    <span>Discount:</span>
+                    <span>Discount {appliedCoupon ? `(${appliedCoupon})` : ''}:</span>
                     <span className="font-mono">-৳{cartDiscount.toLocaleString()}</span>
                   </div>
                 )}

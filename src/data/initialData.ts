@@ -1,4 +1,4 @@
-import { Product, Category, SiteSettings, Order, ProductReview } from '../types';
+import { Product, Category, SiteSettings, Order, ProductReview, Coupon } from '../types';
 
 export const INITIAL_CATEGORIES: Category[] = [
   {
@@ -617,3 +617,57 @@ export const BANGLADESH_DISTRICTS = [
   'Gazipur', 'Narayanganj', 'Comilla', 'Bogura', 'Kushtia', 'Jessore', 'Cox\'s Bazar', 'Noakhali',
   'Feni', 'Brahmanbaria', 'Tangail', 'Faridpur', 'Pabna', 'Dinajpur', 'Jamalpur'
 ];
+
+export const INITIAL_COUPONS: Coupon[] = [
+  {
+    id: 'cpn-101',
+    code: 'BREDVEX10',
+    discountType: 'percentage',
+    discountValue: 10,
+    minOrderAmount: 500,
+    maxDiscountAmount: 500,
+    usageLimit: 500,
+    timesUsed: 42,
+    isActive: true,
+    description: '10% Discount on all orders above ৳500 (Max ৳500 off)',
+    createdAt: '2026-03-01T00:00:00Z'
+  },
+  {
+    id: 'cpn-102',
+    code: 'EID2026',
+    discountType: 'percentage',
+    discountValue: 15,
+    minOrderAmount: 1000,
+    maxDiscountAmount: 1000,
+    usageLimit: 200,
+    timesUsed: 67,
+    isActive: true,
+    description: 'Eid Celebration Special! 15% discount for orders above ৳1,000',
+    createdAt: '2026-03-02T00:00:00Z'
+  },
+  {
+    id: 'cpn-103',
+    code: 'FIRSTBUY',
+    discountType: 'percentage',
+    discountValue: 5,
+    minOrderAmount: 300,
+    usageLimit: 1000,
+    timesUsed: 89,
+    isActive: true,
+    description: 'Welcome reward for first-time buyers! 5% off',
+    createdAt: '2026-03-01T00:00:00Z'
+  },
+  {
+    id: 'cpn-104',
+    code: 'FLAT200',
+    discountType: 'fixed',
+    discountValue: 200,
+    minOrderAmount: 1500,
+    usageLimit: 150,
+    timesUsed: 23,
+    isActive: true,
+    description: 'Flat ৳200 discount on cart value over ৳1,500',
+    createdAt: '2026-03-03T00:00:00Z'
+  }
+];
+

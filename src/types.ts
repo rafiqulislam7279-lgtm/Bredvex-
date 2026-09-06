@@ -120,6 +120,21 @@ export interface SmsSettings {
   autoSendOnCourier: boolean;
 }
 
+export interface Coupon {
+  id: string;
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number; // percentage (e.g. 10 for 10%) or fixed taka (e.g. 200 for ৳200)
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  expiresAt?: string;
+  usageLimit?: number;
+  timesUsed: number;
+  isActive: boolean;
+  description?: string;
+  createdAt: string;
+}
+
 export interface SiteSettings {
   siteName: string;
   tagline: string;
