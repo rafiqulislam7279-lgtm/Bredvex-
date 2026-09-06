@@ -430,6 +430,8 @@ export const INITIAL_SETTINGS: SiteSettings = {
   whatsappNumber: '+8801711223344',
   adminLoginId: 'admin',
   adminPassword: '123456',
+  staffLoginId: 'staff',
+  staffPassword: 'staff123',
   courierSettings: {
     autoBookOnOrder: false, // Can be toggled on by admin
     defaultCourier: 'zone_smart',

@@ -161,7 +161,17 @@ export interface SiteSettings {
   whatsappNumber?: string;
   adminLoginId?: string;
   adminPassword?: string;
+  staffLoginId?: string;
+  staffPassword?: string;
   courierSettings?: CourierSettings;
   flashSale?: FlashSaleConfig;
   smsSettings?: SmsSettings;
+}
+
+export type AdminRole = 'master' | 'staff' | null;
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  role: 'master' | 'staff';
 }

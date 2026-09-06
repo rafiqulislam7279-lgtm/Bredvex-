@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Phone, 
   Mail, 
@@ -6,19 +6,24 @@ import {
   ShieldCheck, 
   Truck, 
   RefreshCcw, 
-  CreditCard,
-  Lock
+  CreditCard, 
+  Lock 
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { INITIAL_CATEGORIES } from '../data/initialData';
+import { PortalLoginSection } from './PortalLoginSection';
+import { AdminLoginModal } from './AdminLoginModal';
 
 export const Footer: React.FC = () => {
   const { 
     settings, 
     setSelectedCategory, 
     setActiveView, 
-    setIsTrackOrderOpen 
+    setIsTrackOrderOpen,
+    isAdminAuthenticated 
   } = useStore();
+
+  const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(false);
 
   return (
     <footer className="bg-slate-950 text-slate-300 pt-16 pb-12 border-t border-slate-800">
@@ -66,6 +71,9 @@ export const Footer: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Portal Login Section (Master, Staff, Legacy) directly below the 7-day return policy section */}
+        <PortalLoginSection />
 
         {/* Main Footer Links */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 text-xs">
@@ -160,11 +168,18 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <button
-                  onClick={() => setActiveView('admin')}
-                  className="hover:text-amber-400 transition-colors text-amber-300/80 font-medium flex items-center gap-1"
+                  type="button"
+                  onClick={() => {
+                    if (isAdminAuthenticated) {
+                      setActiveView('admin');
+                    } else {
+                      setIsAdminLoginModalOpen(true);
+                    }
+                  }}
+                  className="hover:text-amber-400 transition-colors text-amber-300/80 font-medium flex items-center gap-1 cursor-pointer"
                 >
                   <Lock className="w-3.5 h-3.5" />
-                  <span>Admin Login</span>
+                  <span>{isAdminAuthenticated ? 'Admin Dashboard' : 'Admin & Staff Login'}</span>
                 </button>
               </li>
             </ul>
@@ -193,13 +208,20 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-900 flex flex-wrap items-center justify-between gap-4 text-[11px] text-slate-500">
-          <p>© {new Date().getFullYear()} {settings.siteName}. All Rights Reserved. Crafted for Bangladesh E-Commerce.</p>
+          <p>© {new Date().getFullYear()} {settings.siteName}. All Rights Reserved. by Aditto</p>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setActiveView('admin')}
-              className="text-amber-400/70 hover:text-amber-300 font-semibold"
+              type="button"
+              onClick={() => {
+                if (isAdminAuthenticated) {
+                  setActiveView('admin');
+                } else {
+                  setIsAdminLoginModalOpen(true);
+                }
+              }}
+              className="text-amber-400/70 hover:text-amber-300 font-semibold cursor-pointer"
             >
-              Staff / Admin Portal
+              {isAdminAuthenticated ? 'Staff / Admin Dashboard' : 'Staff / Admin Portal'}
             </button>
             <span>•</span>
             <span>Made with precision for BREDVEX</span>
@@ -207,6 +229,12 @@ export const Footer: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Discreet Admin & Staff Login Modal */}
+      <AdminLoginModal
+        isOpen={isAdminLoginModalOpen}
+        onClose={() => setIsAdminLoginModalOpen(false)}
+      />
     </footer>
   );
 };

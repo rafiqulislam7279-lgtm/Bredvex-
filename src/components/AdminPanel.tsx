@@ -37,7 +37,10 @@ import {
   Star,
   MessageCircle,
   Tag,
-  Percent
+  Percent,
+  Crown,
+  Users,
+  UserCheck
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product, SiteSettings, Order, CourierSettings } from '../types';
@@ -45,10 +48,13 @@ import { INITIAL_CATEGORIES } from '../data/initialData';
 import { InvoiceModal } from './InvoiceModal';
 import { SendSmsModal } from './SendSmsModal';
 import { AdminCoupons } from './AdminCoupons';
+import { ThemeToggle } from './ThemeToggle';
 
 export const AdminPanel: React.FC = () => {
   const {
     isAdminAuthenticated,
+    adminRole,
+    adminUser,
     adminLogin,
     adminLogout,
     setActiveView,
@@ -62,6 +68,7 @@ export const AdminPanel: React.FC = () => {
     dispatchOrderToCourier,
     settings,
     updateSettings,
+    updateStaffCredentials,
     resetToDefaults,
     reviews,
     deleteReview,
@@ -69,10 +76,11 @@ export const AdminPanel: React.FC = () => {
   } = useStore();
 
   // Login form states
-  const [adminId, setAdminId] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
+  const [adminId, setAdminId] = useState('aditto13552b');
+  const [adminPassword, setAdminPassword] = useState('aditto13552b');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [loginRoleTab, setLoginRoleTab] = useState<'master' | 'staff' | 'legacy'>('master');
 
   // Admin tab states
   const [adminTab, setAdminTab] = useState<'overview' | 'products' | 'orders' | 'coupons' | 'courier' | 'settings' | 'security' | 'reviews'>('overview');
@@ -141,24 +149,60 @@ export const AdminPanel: React.FC = () => {
   const [passwordChangeError, setPasswordChangeError] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
 
+  // Staff Credentials State
+  const [staffLoginIdInput, setStaffLoginIdInput] = useState(settings.staffLoginId || 'staff');
+  const [staffPasswordInput, setStaffPasswordInput] = useState(settings.staffPassword || 'staff123');
+  const [staffCredSuccess, setStaffCredSuccess] = useState('');
+  const [staffCredError, setStaffCredError] = useState('');
+  const [showStaffPassword, setShowStaffPassword] = useState(false);
+
   // Product search in admin
   const [productSearch, setProductSearch] = useState('');
   const [orderFilter, setOrderFilter] = useState<string>('all');
 
-  // Handle Admin Login
+  // Handle Admin / Staff Login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
-    const ok = adminLogin(adminId, adminPassword);
-    if (!ok) {
-      setLoginError('Invalid Login ID or Password. Please check your credentials.');
+    const res = adminLogin(adminId, adminPassword);
+    if (!res.success) {
+      setLoginError(res.message || 'Invalid Login ID or Password. Please check your credentials.');
     }
   };
 
-  const handleQuickFill = () => {
-    setAdminId('admin');
-    setAdminPassword('123456');
+  const handleSelectRolePreset = (role: 'master' | 'staff' | 'legacy') => {
+    setLoginRoleTab(role);
     setLoginError('');
+    if (role === 'master') {
+      setAdminId('aditto13552b');
+      setAdminPassword('aditto13552b');
+    } else if (role === 'staff') {
+      setAdminId(settings.staffLoginId || 'staff');
+      setAdminPassword(settings.staffPassword || 'staff123');
+    } else {
+      setAdminId(settings.adminLoginId || 'admin');
+      setAdminPassword(settings.adminPassword || '123456');
+    }
+  };
+
+  // Handle Staff Credential Updates
+  const handleSaveStaffCredentials = (e: React.FormEvent) => {
+    e.preventDefault();
+    setStaffCredSuccess('');
+    setStaffCredError('');
+
+    if (!staffLoginIdInput.trim() || !staffPasswordInput.trim()) {
+      setStaffCredError('Staff Login ID and Password cannot be empty.');
+      return;
+    }
+    if (staffLoginIdInput.trim() === 'aditto13552b') {
+      setStaffCredError('Staff cannot use the Master username "aditto13552b".');
+      return;
+    }
+
+    updateStaffCredentials(staffLoginIdInput.trim(), staffPasswordInput.trim());
+    setStaffCredSuccess('Staff credentials successfully updated! Staff can now sign in with this new ID and password.');
+    setTimeout(() => setStaffCredSuccess(''), 4000);
   };
 
   // Open Product Modal for Create or Edit
@@ -430,28 +474,104 @@ export const AdminPanel: React.FC = () => {
   // 1. If not authenticated, show modern Admin Login View
   if (!isAdminAuthenticated) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-slate-100">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-200 p-8 space-y-6">
+      <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-slate-100 dark:bg-slate-950 transition-colors">
+        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 space-y-6">
+          
+          {/* Top Bar with Brand & Theme Toggle */}
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Authentication</span>
+            <ThemeToggle size="sm" showLabel />
+          </div>
+
           <div className="text-center space-y-2">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto border border-amber-500/20">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto border border-amber-500/20 shadow-xs">
               <ShieldCheck className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-black text-slate-900 font-serif">BREDVEX Admin Portal</h2>
-            <p className="text-xs text-slate-500">
-              Secure administrative access for product & store management
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white font-serif">BREDVEX Portal Login</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Select access role or enter your credentials below
             </p>
           </div>
 
+          {/* Role Preset Selector Tabs */}
+          <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700">
+            <button
+              type="button"
+              id="tab-login-master"
+              onClick={() => handleSelectRolePreset('master')}
+              className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-0.5 ${
+                loginRoleTab === 'master'
+                  ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Crown className="w-3.5 h-3.5" />
+              <span className="text-[11px]">👑 Master</span>
+            </button>
+            <button
+              type="button"
+              id="tab-login-staff"
+              onClick={() => handleSelectRolePreset('staff')}
+              className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-0.5 ${
+                loginRoleTab === 'staff'
+                  ? 'bg-sky-500 text-white shadow-xs font-black'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              <span className="text-[11px]">👤 Staff</span>
+            </button>
+            <button
+              type="button"
+              id="tab-login-legacy"
+              onClick={() => handleSelectRolePreset('legacy')}
+              className={`py-2 px-1 text-center rounded-xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-0.5 ${
+                loginRoleTab === 'legacy'
+                  ? 'bg-slate-900 dark:bg-slate-700 text-white shadow-xs font-black'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span className="text-[11px]">🔑 Legacy</span>
+            </button>
+          </div>
+
+          {/* Role Explanatory Banner */}
+          <div className={`p-3 rounded-xl border text-xs leading-relaxed ${
+            loginRoleTab === 'master' 
+              ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-950 dark:text-amber-200' 
+              : loginRoleTab === 'staff'
+              ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-950 dark:text-sky-200'
+              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
+          }`}>
+            {loginRoleTab === 'master' && (
+              <p>
+                <strong>👑 Master Login:</strong> Permanent unchangeable root access (<code>aditto13552b</code>). Full control over website customization, logo, hotline, payment numbers & staff management.
+              </p>
+            )}
+            {loginRoleTab === 'staff' && (
+              <p>
+                <strong>👤 Staff Login:</strong> Operational account for customer orders, inventory, courier parcel dispatch & reviews. Website customization is restricted to protect site branding.
+              </p>
+            )}
+            {loginRoleTab === 'legacy' && (
+              <p>
+                <strong>🔑 Legacy Admin:</strong> Secondary admin login (default <code>admin</code> / <code>123456</code>). Can be changed in the Security tab.
+              </p>
+            )}
+          </div>
+
           {loginError && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-medium">
-              {loginError}
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs rounded-xl font-medium flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{loginError}</span>
             </div>
           )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Admin Login ID:
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Login Username / ID:
               </label>
               <input
                 id="input-admin-id"
@@ -460,13 +580,13 @@ export const AdminPanel: React.FC = () => {
                 value={adminId}
                 onChange={(e) => setAdminId(e.target.value)}
                 placeholder="Enter Login ID"
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-hidden focus:border-amber-500 focus:bg-white font-mono"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-hidden focus:border-amber-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white font-mono"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Admin Password:
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Password:
               </label>
               <div className="relative">
                 <input
@@ -475,13 +595,13 @@ export const AdminPanel: React.FC = () => {
                   required
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="123456"
-                  className="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-hidden focus:border-amber-500 focus:bg-white font-mono"
+                  placeholder="Enter Password"
+                  className="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-hidden focus:border-amber-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -491,40 +611,60 @@ export const AdminPanel: React.FC = () => {
             <button
               type="submit"
               id="btn-admin-login-submit"
-              className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 rounded-xl bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-400 text-white dark:text-slate-950 font-black text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
             >
-              <Lock className="w-4 h-4 text-amber-400" />
-              <span>Sign In to Admin Panel</span>
+              <Lock className="w-4 h-4 text-amber-400 dark:text-slate-950" />
+              <span>
+                {loginRoleTab === 'master' ? 'Sign In as Master Admin' : loginRoleTab === 'staff' ? 'Sign In as Staff Member' : 'Sign In as Admin'}
+              </span>
             </button>
           </form>
 
-          {/* Quick Fill credentials helper box */}
-          <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-xs text-amber-950 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 font-bold text-amber-950">
-                <KeyRound className="w-4 h-4 text-amber-600" />
-                <span>Admin Security & Login Info:</span>
+          {/* Quick Credentials Summary */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 space-y-2">
+            <div className="flex items-center justify-between font-bold">
+              <span className="flex items-center gap-1.5 text-slate-900 dark:text-white">
+                <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+                Available Login Credentials:
+              </span>
+            </div>
+            <div className="space-y-1 font-mono text-[11px]">
+              <div className="flex justify-between items-center bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-slate-700">
+                <span>👑 Master: <strong>aditto13552b</strong></span>
+                <button
+                  type="button"
+                  onClick={() => handleSelectRolePreset('master')}
+                  className="text-amber-600 dark:text-amber-400 font-bold hover:underline"
+                >
+                  Autofill
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleQuickFill}
-                className="px-2.5 py-1 rounded-md bg-amber-200/90 hover:bg-amber-300 font-bold text-[11px] transition-colors cursor-pointer text-amber-950"
-              >
-                1-Click Auto Fill
-              </button>
+              <div className="flex justify-between items-center bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-slate-700">
+                <span>👤 Staff: <strong>{settings.staffLoginId || 'staff'}</strong></span>
+                <button
+                  type="button"
+                  onClick={() => handleSelectRolePreset('staff')}
+                  className="text-sky-600 dark:text-sky-400 font-bold hover:underline"
+                >
+                  Autofill
+                </button>
+              </div>
+              <div className="flex justify-between items-center bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-slate-700">
+                <span>🔑 Legacy: <strong>{settings.adminLoginId || 'admin'}</strong></span>
+                <button
+                  type="button"
+                  onClick={() => handleSelectRolePreset('legacy')}
+                  className="text-slate-600 dark:text-slate-400 font-bold hover:underline"
+                >
+                  Autofill
+                </button>
+              </div>
             </div>
-            <div className="p-2 bg-amber-100/70 rounded-lg text-[12px] space-y-1 font-mono">
-              <p>Default Login ID: <strong>{settings.adminLoginId || 'admin'}</strong></p>
-              <p>Default Password: <strong>123456</strong></p>
-            </div>
-            <p className="text-[11px] text-amber-900 leading-snug">
-              🔐 <strong>পাসওয়ার্ড পরিবর্তন:</strong> Once signed in, you can change your Login ID & Password anytime under the <strong>"Admin Security & Password"</strong> tab at the top.
-            </p>
           </div>
 
           <button
             onClick={() => setActiveView('shop')}
-            className="w-full text-center text-xs text-slate-500 hover:text-slate-800 font-medium py-1"
+            className="w-full text-center text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-medium py-1 cursor-pointer transition-colors"
           >
             ← Return to Customer Store
           </button>
@@ -535,29 +675,42 @@ export const AdminPanel: React.FC = () => {
 
   // 2. Full Admin Dashboard
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-900 pb-16">
+    <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16 transition-colors">
       
       {/* Top Admin Header */}
-      <div className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-slate-900 dark:bg-slate-950 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-amber-500 text-slate-950 font-black">
+            <div className="p-2 rounded-xl bg-amber-500 text-slate-950 font-black shadow-xs">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-base font-bold tracking-tight text-white font-serif">
-                  {settings.siteName} Admin Panel
+                  {settings.siteName} Portal
                 </h1>
-                <span className="text-[10px] font-bold bg-amber-400 text-slate-950 px-2 py-0.5 rounded-md uppercase">
-                  ADMIN
-                </span>
+                {adminRole === 'master' ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-black bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full uppercase shadow-xs">
+                    <Crown className="w-3 h-3" /> Master Admin
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-black bg-sky-400 text-slate-950 px-2.5 py-0.5 rounded-full uppercase shadow-xs">
+                    <UserCheck className="w-3 h-3" /> Staff Member
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-slate-400">Live Management Dashboard</p>
+              <p className="text-xs text-slate-400">
+                {adminRole === 'master' 
+                  ? 'Root Master Account (Full Customization & Security)' 
+                  : 'Operational Access Mode (Website Customization Restricted)'}
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Dark / Light Mode Toggle */}
+            <ThemeToggle size="md" />
+
             <button
               id="btn-header-admin-security"
               onClick={() => setAdminTab('security')}
@@ -568,7 +721,7 @@ export const AdminPanel: React.FC = () => {
               }`}
             >
               <KeyRound className="w-4 h-4 text-amber-400" />
-              <span>Admin Security & Password</span>
+              <span>{adminRole === 'master' ? 'Security & Staff Accounts' : 'Security Info'}</span>
             </button>
             <button
               id="btn-admin-view-store"
@@ -576,7 +729,7 @@ export const AdminPanel: React.FC = () => {
               className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Store className="w-4 h-4 text-emerald-400" />
-              <span>Back to Store</span>
+              <span>Store</span>
             </button>
             <button
               id="btn-admin-logout"
@@ -675,7 +828,12 @@ export const AdminPanel: React.FC = () => {
             }`}
           >
             <SettingsIcon className="w-4 h-4" />
-            <span>Store Logo & Info Settings</span>
+            <span>Store Logo & Customization</span>
+            {adminRole === 'staff' && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-900/60 text-rose-300 font-bold border border-rose-700/50 flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" /> Master Only
+              </span>
+            )}
           </button>
 
           <button
@@ -701,7 +859,12 @@ export const AdminPanel: React.FC = () => {
             }`}
           >
             <KeyRound className="w-4 h-4 text-amber-400" />
-            <span>Admin Security & Password</span>
+            <span>Security & Staff Accounts</span>
+            {adminRole === 'staff' && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-900/60 text-rose-300 font-bold border border-rose-700/50 flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" /> Master Only
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -1744,6 +1907,49 @@ export const AdminPanel: React.FC = () => {
 
         {/* ===================== TAB 4: STORE SETTINGS ===================== */}
         {adminTab === 'settings' && (
+          adminRole === 'staff' ? (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-rose-200 dark:border-rose-900/60 p-8 sm:p-12 shadow-sm text-center max-w-2xl mx-auto space-y-6">
+              <div className="w-16 h-16 rounded-3xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto border border-rose-200 dark:border-rose-800">
+                <Lock className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 text-xs font-bold border border-rose-200 dark:border-rose-800">
+                  <ShieldCheck className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                  Staff Role Restriction
+                </span>
+                <h3 className="text-2xl font-black font-serif text-slate-900 dark:text-white">
+                  Website Customization Restricted
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                  Only Administrators have permission to customize the website branding, site logo, contact hotlines, payment gateways (bKash/Nagad), and delivery charges.
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Staff accounts are restricted to operational tasks: customer orders, product catalog, courier bookings, and review moderation.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  id="btn-staff-redirect-orders"
+                  onClick={() => setAdminTab('orders')}
+                  className="px-5 py-2.5 bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 font-bold text-xs rounded-xl shadow-xs hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <ShoppingBag className="w-4 h-4 text-amber-400 dark:text-slate-950" />
+                  <span>Go to Customer Orders</span>
+                </button>
+                <button
+                  type="button"
+                  id="btn-staff-redirect-products"
+                  onClick={() => setAdminTab('products')}
+                  className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <Package className="w-4 h-4" />
+                  <span>Manage Products</span>
+                </button>
+              </div>
+            </div>
+          ) : (
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-xs">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
@@ -2505,10 +2711,58 @@ export const AdminPanel: React.FC = () => {
               </form>
             </div>
           </div>
+          )
         )}
 
         {/* ===================== TAB 5: ADMIN SECURITY & PASSWORD ===================== */}
         {adminTab === 'security' && (
+          adminRole === 'staff' ? (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-rose-200 dark:border-rose-900/60 p-8 sm:p-12 shadow-sm text-center max-w-2xl mx-auto space-y-6">
+              <div className="w-16 h-16 rounded-3xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto border border-rose-200 dark:border-rose-800">
+                <Lock className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 text-xs font-bold border border-rose-200 dark:border-rose-800">
+                  <ShieldCheck className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                  Staff Security Restriction
+                </span>
+                <h3 className="text-2xl font-black font-serif text-slate-900 dark:text-white">
+                  Security Settings Managed by Master Admin
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                  As a Staff Member, you cannot alter portal passwords, create or modify staff credentials, or change store access keys. 
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  To configure security or change passwords, please log out and sign in using the Master Admin account.
+                </p>
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs text-left max-w-sm mx-auto space-y-1 font-mono">
+                <div className="text-[11px] font-sans font-bold text-slate-500 dark:text-slate-400 uppercase">Active Session</div>
+                <div className="text-slate-900 dark:text-white font-bold">Role: 👤 Staff Member</div>
+                <div className="text-slate-600 dark:text-slate-400">Login ID: {adminUser}</div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAdminTab('orders')}
+                  className="px-5 py-2.5 bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 font-bold text-xs rounded-xl shadow-xs hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <ShoppingBag className="w-4 h-4 text-amber-400 dark:text-slate-950" />
+                  <span>Go to Customer Orders</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={adminLogout}
+                  className="px-5 py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+          ) : (
           <div className="space-y-6 max-w-4xl mx-auto">
             
             {/* Header Card */}
@@ -2516,47 +2770,201 @@ export const AdminPanel: React.FC = () => {
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold border border-amber-400/30">
                   <KeyRound className="w-3.5 h-3.5" />
-                  <span>Portal Security Controls</span>
+                  <span>Portal Security & Account Controls</span>
                 </div>
                 <h3 className="text-2xl font-black font-serif text-white tracking-tight">
-                  Admin Security & Password
+                  Security, Master Access & Staff Accounts
                 </h3>
                 <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
-                  পাসওয়ার্ড এবং অ্যাডমিন লগইন আইডি পরিবর্তন করুন। Change your login credentials to protect your store inventory, order processing, and revenue data.
+                  পাসওয়ার্ড, আনচেঞ্জেবল মাস্টার লগইন এবং স্টাফ অ্যাকাউন্ট পরিচালনা করুন। Manage your permanent root credentials, staff access permissions, and secondary admin passwords.
                 </p>
               </div>
 
               {/* Status Badge */}
               <div className="bg-slate-800/80 backdrop-blur-xs p-4 rounded-2xl border border-slate-700 space-y-1.5 shrink-0 text-left sm:text-right">
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Current Login ID</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Current Session</span>
                 <div className="text-base font-black font-mono text-amber-400">
-                  {settings.adminLoginId || 'admin'}
+                  👑 {adminUser} (Master)
                 </div>
                 <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  Active & Authenticated
+                  Full Authorization Active
                 </span>
               </div>
             </div>
 
-            {/* Change Password Form Card */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-              <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+            {/* Permanent Master Login Card */}
+            <div className="p-6 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent rounded-3xl border border-amber-400/30 bg-white dark:bg-slate-900 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-sm">
+                    <Crown className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-base font-bold text-slate-900 dark:text-white font-serif">
+                        Permanent Master Root Account (অপরিবর্তনযোগ্য মাস্টার লগইন)
+                      </h4>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950">
+                        IMMUTABLE
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Unchangeable master root credentials that always provide full administrative ownership and access.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                    Master Username / Login ID
+                  </span>
+                  <div className="text-base font-black font-mono text-slate-900 dark:text-white mt-0.5">
+                    aditto13552b
+                  </div>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 inline-block">
+                    ✓ Permanent Root Access
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                    Master Password
+                  </span>
+                  <div className="text-base font-black font-mono text-slate-900 dark:text-white mt-0.5">
+                    aditto13552b
+                  </div>
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium mt-1 inline-block">
+                    🔒 Unchangeable Safety Master Key
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-600 dark:text-slate-400 bg-amber-50/80 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200/80 dark:border-amber-800">
+                🛡️ <strong>Note:</strong> This master account is hardcoded as requested and cannot be accidentally overridden, corrupted, or deleted. You can always log in with <code>aditto13552b</code> to restore full access.
+              </p>
+            </div>
+
+            {/* Staff Accounts Management Card */}
+            <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-5 shadow-xs">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="w-11 h-11 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-500/20">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white font-serif">
+                    Staff Login Credentials Management (স্টাফ অ্যাকাউন্ট পরিচালনা)
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Set up credentials for your staff members. Staff can manage orders, parcels, and inventory, but website customization is permanently locked.
+                  </p>
+                </div>
+              </div>
+
+              {staffCredSuccess && (
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs rounded-2xl font-medium flex items-center gap-3 animate-in fade-in">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <span>{staffCredSuccess}</span>
+                </div>
+              )}
+
+              {staffCredError && (
+                <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs rounded-2xl font-medium flex items-center gap-3 animate-in fade-in">
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                  <span>{staffCredError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveStaffCredentials} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Staff Login ID / Username:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={staffLoginIdInput}
+                      onChange={(e) => setStaffLoginIdInput(e.target.value)}
+                      placeholder="e.g. staff or employee1"
+                      className="w-full px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-hidden focus:border-sky-500 focus:bg-white dark:focus:bg-slate-800 font-mono text-slate-900 dark:text-white"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      Current: <code className="text-sky-600 font-bold">{settings.staffLoginId || 'staff'}</code>
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Staff Password:
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showStaffPassword ? 'text' : 'password'}
+                        required
+                        value={staffPasswordInput}
+                        onChange={(e) => setStaffPasswordInput(e.target.value)}
+                        placeholder="Enter staff password"
+                        className="w-full pl-4 pr-10 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-hidden focus:border-sky-500 focus:bg-white dark:focus:bg-slate-800 font-mono text-slate-900 dark:text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowStaffPassword(!showStaffPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                      >
+                        {showStaffPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Current: <code className="text-sky-600 font-bold">{settings.staffPassword || 'staff123'}</code>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-between">
+                  <button
+                    type="submit"
+                    id="btn-save-staff-credentials"
+                    className="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Save Staff Credentials</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStaffLoginIdInput('staff');
+                      setStaffPasswordInput('staff123');
+                    }}
+                    className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline cursor-pointer"
+                  >
+                    Reset staff to default (staff / staff123)
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Change Legacy Admin Password Form Card */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
                 <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center border border-amber-500/20">
                   <Lock className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-base font-bold text-slate-900 font-serif">
-                    Change Admin Credentials (লগইন আইডি ও নতুন পাসওয়ার্ড)
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white font-serif">
+                    Legacy Admin Credentials (সেকেন্ডারি অ্যাডমিন পাসওয়ার্ড পরিবর্তন)
                   </h4>
-                  <p className="text-xs text-slate-500">
-                    Enter your desired new login ID and a secure password below.
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Optionally update the secondary admin ID and password.
                   </p>
                 </div>
               </div>
 
               {passwordChangeSuccess && (
-                <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-2xl font-medium flex items-center gap-3 animate-in fade-in">
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs rounded-2xl font-medium flex items-center gap-3 animate-in fade-in">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                   <div>
                     <strong className="block font-bold">Success! পাসওয়ার্ড সফলভাবে সংরক্ষিত হয়েছে!</strong>
@@ -2566,7 +2974,7 @@ export const AdminPanel: React.FC = () => {
               )}
 
               {passwordChangeError && (
-                <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-2xl font-medium flex items-center gap-3 animate-in fade-in">
+                <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs rounded-2xl font-medium flex items-center gap-3 animate-in fade-in">
                   <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
                   <div>
                     <strong className="block font-bold">Error</strong>
@@ -2579,7 +2987,7 @@ export const AdminPanel: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                   
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
                       Admin Login ID:
                     </label>
                     <input
@@ -2589,15 +2997,15 @@ export const AdminPanel: React.FC = () => {
                       value={newAdminLoginId}
                       onChange={(e) => setNewAdminLoginId(e.target.value)}
                       placeholder="e.g. admin or your username"
-                      className="w-full px-4 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-hidden focus:border-amber-500 focus:bg-white font-mono transition-all"
+                      className="w-full px-4 py-3 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-hidden focus:border-amber-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white font-mono transition-all"
                     />
-                    <p className="text-[11px] text-slate-500">
-                      Your login username (default: <code className="text-amber-700 font-bold">{settings.adminLoginId || 'admin'}</code>)
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Your login username (default: <code className="text-amber-700 dark:text-amber-400 font-bold">{settings.adminLoginId || 'admin'}</code>)
                     </p>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
                       New Password:
                     </label>
                     <div className="relative">
@@ -2608,24 +3016,24 @@ export const AdminPanel: React.FC = () => {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Enter new password"
-                        className="w-full pl-4 pr-11 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-hidden focus:border-amber-500 focus:bg-white font-mono transition-all"
+                        className="w-full pl-4 pr-11 py-3 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-hidden focus:border-amber-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white font-mono transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
                         title={showNewPassword ? 'Hide password' : 'Show password'}
                       >
                         {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       Minimum 4 characters required
                     </p>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
                       Confirm New Password:
                     </label>
                     <input
@@ -2635,22 +3043,22 @@ export const AdminPanel: React.FC = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Repeat new password"
-                      className="w-full px-4 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-hidden focus:border-amber-500 focus:bg-white font-mono transition-all"
+                      className="w-full px-4 py-3 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-hidden focus:border-amber-500 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-white font-mono transition-all"
                     />
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       Must match new password exactly
                     </p>
                   </div>
 
                 </div>
 
-                <div className="pt-2 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100">
+                <div className="pt-2 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-800">
                   <button
                     type="submit"
                     id="btn-submit-change-password-tab"
-                    className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 hover:shadow-lg"
+                    className="px-6 py-3 bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-400 text-white dark:text-slate-950 font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 hover:shadow-lg"
                   >
-                    <KeyRound className="w-4 h-4 text-amber-400" />
+                    <KeyRound className="w-4 h-4 text-amber-400 dark:text-slate-950" />
                     <span>Save New Password & Login ID</span>
                   </button>
 
@@ -2661,7 +3069,7 @@ export const AdminPanel: React.FC = () => {
                       setNewPassword('123456');
                       setConfirmPassword('123456');
                     }}
-                    className="text-xs text-slate-500 hover:text-slate-800 underline font-medium cursor-pointer"
+                    className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white underline font-medium cursor-pointer"
                   >
                     Reset fields to default (admin / 123456)
                   </button>
@@ -2670,19 +3078,20 @@ export const AdminPanel: React.FC = () => {
             </div>
 
             {/* Helpful Guide Card */}
-            <div className="p-6 bg-amber-50/70 rounded-3xl border border-amber-200/80 text-amber-950 space-y-3">
+            <div className="p-6 bg-amber-50/70 dark:bg-amber-950/30 rounded-3xl border border-amber-200/80 dark:border-amber-800 text-amber-950 dark:text-amber-200 space-y-3">
               <h4 className="text-sm font-bold flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-amber-700" />
+                <ShieldCheck className="w-4 h-4 text-amber-700 dark:text-amber-400" />
                 <span>Security Recommendations & Instructions (পাসওয়ার্ড সম্পর্কিত জরুরি তথ্য)</span>
               </h4>
-              <ul className="text-xs space-y-1.5 text-amber-900 list-disc list-inside">
+              <ul className="text-xs space-y-1.5 text-amber-900 dark:text-amber-300 list-disc list-inside">
                 <li>Make sure to write down or memorize your new Login ID and Password before logging out.</li>
                 <li>You can test your new credentials immediately by clicking <strong>"Logout"</strong> in the top right corner and signing back in.</li>
-                <li>If you ever forget your custom password, the system also accepts the default emergency credentials (<code>admin</code> / <code>123456</code>).</li>
+                <li>If you ever forget your custom password, the system always accepts the immutable Master credentials (<code>aditto13552b</code> / <code>aditto13552b</code>).</li>
               </ul>
             </div>
 
           </div>
+          )
         )}
 
         {/* ===================== TAB 6: CUSTOMER REVIEWS MODERATION ===================== */}

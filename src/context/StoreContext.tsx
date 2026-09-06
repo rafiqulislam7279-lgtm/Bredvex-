@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { Product, CartItem, Order, SiteSettings, CustomerInfo, PaymentMethod, ProductReview, Coupon } from '../types';
+import { Product, CartItem, Order, SiteSettings, CustomerInfo, PaymentMethod, ProductReview, Coupon, AdminRole, AdminUser } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_SETTINGS, INITIAL_ORDERS, INITIAL_REVIEWS, INITIAL_COUPONS } from '../data/initialData';
 import { dispatchOrder, DispatchResult } from '../services/courierService';
 import { sendSmsNotification, generateOrderSmsText, generateCourierSmsText } from '../services/smsService';
+
+export const MASTER_LOGIN_ID = 'aditto13552b';
+export const MASTER_LOGIN_PASSWORD = 'aditto13552b';
 
 interface StoreContextType {
   products: Product[];
@@ -13,6 +16,9 @@ interface StoreContextType {
   wishlistIds: string[];
   reviews: ProductReview[];
   isAdminAuthenticated: boolean;
+  adminRole: AdminRole;
+  adminUser: AdminUser | null;
+  theme: 'light' | 'dark';
   activeView: 'shop' | 'admin';
   selectedProductForModal: Product | null;
   isCartOpen: boolean;
@@ -74,13 +80,18 @@ interface StoreContextType {
   dispatchOrderToCourier: (orderId: string, courier: 'steadfast' | 'pathao' | 'auto') => Promise<DispatchResult>;
   sendOrderSms: (orderId: string, type: 'order_placed' | 'courier_dispatch' | 'custom', customMsg?: string) => Promise<{ success: boolean; message: string }>;
   
+  // Theme operations
+  toggleTheme: () => void;
+  setTheme: (theme: 'light' | 'dark') => void;
+
   // Admin Operations
-  adminLogin: (id: string, pass: string) => boolean;
+  adminLogin: (id: string, pass: string) => { success: boolean; role?: AdminRole; message?: string };
   adminLogout: () => void;
   addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => void;
   updateProduct: (id: string, updatedData: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   updateSettings: (newSettings: Partial<SiteSettings>) => void;
+  updateStaffCredentials: (staffId: string, staffPass: string) => void;
   resetToDefaults: () => void;
   
   // Calculations
@@ -160,7 +171,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return INITIAL_REVIEWS;
   });
 
-  // Admin Auth
+  // Admin Auth & Role
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
     try {
       return localStorage.getItem('bredvex_admin_auth') === 'true';
@@ -168,6 +179,68 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return false;
     }
   });
+
+  const [adminRole, setAdminRole] = useState<AdminRole>(() => {
+    try {
+      const saved = localStorage.getItem('bredvex_admin_role');
+      if (saved === 'master' || saved === 'staff') return saved;
+    } catch {
+      // fallback
+    }
+    return null;
+  });
+
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(() => {
+    try {
+      const saved = localStorage.getItem('bredvex_admin_user');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return null;
+  });
+
+  // Dark / Light Theme System
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    try {
+      const saved = localStorage.getItem('bredvex_theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+    } catch {
+      // fallback
+    }
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  });
+
+  // Apply theme to document root
+  useEffect(() => {
+    try {
+      localStorage.setItem('bredvex_theme', theme);
+    } catch (e) {
+      console.error('Failed to save theme:', e);
+    }
+
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      if (theme === 'dark') {
+        root.classList.add('dark');
+        root.setAttribute('data-theme', 'dark');
+      } else {
+        root.classList.remove('dark');
+        root.setAttribute('data-theme', 'light');
+      }
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setThemeState(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const setTheme = (newTheme: 'light' | 'dark') => {
+    setThemeState(newTheme);
+  };
 
   // UI state
   const [activeView, setActiveView] = useState<'shop' | 'admin'>('shop');
@@ -689,24 +762,75 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Admin Auth
-  const adminLogin = (id: string, pass: string) => {
-    const cleanId = id.trim().toLowerCase();
-    const currentId = (settings.adminLoginId || 'admin').trim().toLowerCase();
-    const currentPass = settings.adminPassword || '123456';
+  const adminLogin = (id: string, pass: string): { success: boolean; role?: AdminRole; message?: string } => {
+    const cleanId = id.trim();
+    const cleanPass = pass.trim();
 
-    const isIdMatch = cleanId === currentId || cleanId === 'adittoadmin' || cleanId === 'admin';
-    const isPassMatch = pass === currentPass || pass === '123456';
-
-    if (isIdMatch && isPassMatch) {
+    // 1. Unchangeable Master Login (Hardcoded Master Admin)
+    if (cleanId === MASTER_LOGIN_ID && cleanPass === MASTER_LOGIN_PASSWORD) {
       setIsAdminAuthenticated(true);
-      return true;
+      setAdminRole('master');
+      const user: AdminUser = { id: MASTER_LOGIN_ID, name: 'Aditto (Master)', role: 'master' };
+      setAdminUser(user);
+      return { success: true, role: 'master', message: '👑 Welcome Master Admin Aditto!' };
     }
-    return false;
+
+    // 2. Old/Legacy Admin Login (also grants Master access as requested)
+    const legacyId = (settings.adminLoginId || 'admin').trim();
+    const legacyPass = (settings.adminPassword || '123456').trim();
+    if (
+      (cleanId.toLowerCase() === legacyId.toLowerCase() || cleanId.toLowerCase() === 'admin' || cleanId.toLowerCase() === 'adittoadmin') &&
+      (cleanPass === legacyPass || cleanPass === '123456')
+    ) {
+      setIsAdminAuthenticated(true);
+      setAdminRole('master');
+      const user: AdminUser = { id: cleanId, name: 'Master Administrator', role: 'master' };
+      setAdminUser(user);
+      return { success: true, role: 'master', message: '👑 Logged in with Master privileges.' };
+    }
+
+    // 3. Staff Login System (Operational access only - cannot customize website)
+    const staffId = (settings.staffLoginId || 'staff').trim();
+    const staffPass = (settings.staffPassword || 'staff123').trim();
+    if (
+      (cleanId.toLowerCase() === staffId.toLowerCase() || cleanId.toLowerCase() === 'staff') &&
+      (cleanPass === staffPass || cleanPass === 'staff123')
+    ) {
+      setIsAdminAuthenticated(true);
+      setAdminRole('staff');
+      const user: AdminUser = { id: cleanId, name: 'Store Staff Member', role: 'staff' };
+      setAdminUser(user);
+      return { success: true, role: 'staff', message: '👤 Logged in as Staff (Operational mode).' };
+    }
+
+    return { success: false, message: 'Invalid Login ID or Password. Please verify your credentials.' };
   };
 
   const adminLogout = () => {
     setIsAdminAuthenticated(false);
+    setAdminRole(null);
+    setAdminUser(null);
+    try {
+      localStorage.removeItem('bredvex_admin_auth');
+      localStorage.removeItem('bredvex_admin_role');
+      localStorage.removeItem('bredvex_admin_user');
+    } catch (e) {
+      console.error(e);
+    }
     setActiveView('shop');
+  };
+
+  // Staff Credentials Update (Only Master Admins can update staff access)
+  const updateStaffCredentials = (staffId: string, staffPass: string) => {
+    if (adminRole !== 'master') {
+      alert('Unauthorized: Only Master Admins can update Staff credentials.');
+      return;
+    }
+    setSettings(prev => ({
+      ...prev,
+      staffLoginId: staffId.trim(),
+      staffPassword: staffPass.trim()
+    }));
   };
 
   // Admin Product Operations
@@ -730,10 +854,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateSettings = (newSettings: Partial<SiteSettings>) => {
+    // Permission check: Staff users cannot customize website branding or settings
+    if (adminRole === 'staff') {
+      console.warn('Unauthorized: Staff members cannot customize website settings.');
+      alert('Access Restricted: Only Master Admins are permitted to customize website settings.');
+      return;
+    }
     setSettings(prev => ({ ...prev, ...newSettings }));
   };
 
   const resetToDefaults = () => {
+    if (adminRole === 'staff') {
+      alert('Access Restricted: Only Master Admins can reset the store to defaults.');
+      return;
+    }
     setProducts(INITIAL_PRODUCTS);
     setSettings(INITIAL_SETTINGS);
     setOrders(INITIAL_ORDERS);
@@ -752,6 +886,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         wishlistIds,
         reviews,
         isAdminAuthenticated,
+        adminRole,
+        adminUser,
+        theme,
+        toggleTheme,
+        setTheme,
         activeView,
         selectedProductForModal,
         isCartOpen,
@@ -802,6 +941,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateProduct,
         deleteProduct,
         updateSettings,
+        updateStaffCredentials,
         resetToDefaults,
         cartSubtotal,
         cartDiscount,
