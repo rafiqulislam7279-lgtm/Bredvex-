@@ -4,7 +4,6 @@ import {
   Crown, 
   UserCheck, 
   Lock, 
-  KeyRound, 
   AlertCircle, 
   CheckCircle2, 
   Eye, 
@@ -20,11 +19,11 @@ interface AdminLoginModalProps {
 }
 
 export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) => {
-  const { adminLogin, setActiveView, settings } = useStore();
+  const { adminLogin, setActiveView } = useStore();
 
   const [loginRoleTab, setLoginRoleTab] = useState<'master' | 'staff' | 'legacy'>('master');
-  const [adminId, setAdminId] = useState('aditto13552b');
-  const [adminPassword, setAdminPassword] = useState('aditto13552b');
+  const [adminId, setAdminId] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [loginSuccessMsg, setLoginSuccessMsg] = useState('');
@@ -34,16 +33,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
   const handleSelectRolePreset = (role: 'master' | 'staff' | 'legacy') => {
     setLoginRoleTab(role);
     setLoginError('');
-    if (role === 'master') {
-      setAdminId('aditto13552b');
-      setAdminPassword('aditto13552b');
-    } else if (role === 'staff') {
-      setAdminId(settings.staffLoginId || 'staff');
-      setAdminPassword(settings.staffPassword || 'staff123');
-    } else {
-      setAdminId(settings.adminLoginId || 'admin');
-      setAdminPassword(settings.adminPassword || '123456');
-    }
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -148,17 +137,17 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
         }`}>
           {loginRoleTab === 'master' && (
             <p>
-              <strong>👑 Master Login:</strong> Permanent root access (<code>aditto13552b</code>). Full control over website customization, logo, hotline, payment numbers & staff management.
+              <strong>👑 Master Account:</strong> Root administrator access. Full control over website customization, logo, hotline, payment numbers & staff management.
             </p>
           )}
           {loginRoleTab === 'staff' && (
             <p>
-              <strong>👤 Staff Login:</strong> Operational account for customer orders, inventory, courier parcel dispatch & reviews. Website customization is restricted.
+              <strong>👤 Staff Account:</strong> Operational account for customer orders, inventory, courier parcel dispatch & reviews. Website customization is restricted.
             </p>
           )}
           {loginRoleTab === 'legacy' && (
             <p>
-              <strong>🔑 Legacy Admin:</strong> Secondary admin login (default <code>admin</code> / <code>123456</code>).
+              <strong>🔑 Legacy Admin:</strong> Secondary administrator login.
             </p>
           )}
         </div>
@@ -189,7 +178,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
               required
               value={adminId}
               onChange={(e) => setAdminId(e.target.value)}
-              placeholder="Enter Login ID"
+              placeholder="Enter your Login ID"
               className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-hidden focus:border-amber-500 text-slate-900 dark:text-white font-mono"
             />
           </div>
@@ -205,7 +194,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
                 required
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
-                placeholder="Enter Password"
+                placeholder="Enter your Password"
                 className="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-hidden focus:border-amber-500 text-slate-900 dark:text-white font-mono"
               />
               <button
@@ -230,50 +219,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
             <ArrowRight className="w-4 h-4 ml-1" />
           </button>
         </form>
-
-        {/* Quick Credentials Summary & Autofill */}
-        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 space-y-2">
-          <div className="flex items-center justify-between font-bold">
-            <span className="flex items-center gap-1.5 text-slate-900 dark:text-white">
-              <KeyRound className="w-3.5 h-3.5 text-amber-500" />
-              Quick 1-Click Autofill:
-            </span>
-          </div>
-          <div className="space-y-1 font-mono text-[11px]">
-            <div className="flex justify-between items-center bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-slate-700">
-              <span>👑 Master: <strong>aditto13552b</strong></span>
-              <button
-                type="button"
-                onClick={() => handleSelectRolePreset('master')}
-                className="text-amber-600 dark:text-amber-400 font-bold hover:underline cursor-pointer"
-              >
-                Autofill
-              </button>
-            </div>
-
-            <div className="flex justify-between items-center bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-slate-700">
-              <span>👤 Staff: <strong>{settings.staffLoginId || 'staff'}</strong></span>
-              <button
-                type="button"
-                onClick={() => handleSelectRolePreset('staff')}
-                className="text-sky-600 dark:text-sky-400 font-bold hover:underline cursor-pointer"
-              >
-                Autofill
-              </button>
-            </div>
-
-            <div className="flex justify-between items-center bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-slate-700">
-              <span>🔑 Legacy: <strong>{settings.adminLoginId || 'admin'}</strong></span>
-              <button
-                type="button"
-                onClick={() => handleSelectRolePreset('legacy')}
-                className="text-slate-600 dark:text-slate-400 font-bold hover:underline cursor-pointer"
-              >
-                Autofill
-              </button>
-            </div>
-          </div>
-        </div>
 
       </div>
     </div>
