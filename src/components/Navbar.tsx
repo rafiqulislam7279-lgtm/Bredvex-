@@ -8,7 +8,6 @@ import {
   Phone, 
   Menu, 
   X, 
-  Sparkles,
   SlidersHorizontal,
   PackageCheck
 } from 'lucide-react';
@@ -53,8 +52,8 @@ export const Navbar: React.FC = () => {
         <div className="bg-slate-900 dark:bg-slate-950 text-slate-100 text-xs py-2 px-4 border-b border-slate-800 dark:border-slate-800/80">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
-              <span className="inline-flex items-center gap-1 bg-rose-500/20 text-rose-300 font-semibold px-2 py-0.5 rounded-full text-[11px] border border-rose-500/30">
-                <Sparkles className="w-3 h-3 text-rose-400" /> BREDVEX
+              <span className="inline-flex items-center bg-rose-500/20 text-rose-300 font-semibold px-2.5 py-0.5 rounded-full text-[11px] border border-rose-500/30">
+                BREDVEX
               </span>
               <p className="truncate text-slate-200 font-medium">
                 {settings.announcementText}

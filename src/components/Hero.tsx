@@ -5,7 +5,6 @@ import {
   Truck, 
   RefreshCcw, 
   CreditCard, 
-  Sparkles,
   Award,
   Zap
 } from 'lucide-react';
@@ -27,8 +26,7 @@ export const Hero: React.FC = () => {
           {/* Left Hero Content */}
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
             {/* Tag Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold tracking-wide">
-              <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+            <div className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold tracking-wide">
               <span>{settings.heroBadge || '🇧🇩 PREMIUM BANGLADESHI E-COMMERCE'}</span>
             </div>
 
