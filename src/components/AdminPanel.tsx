@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   Lock, 
@@ -156,6 +156,16 @@ export const AdminPanel: React.FC = () => {
   const [staffCredError, setStaffCredError] = useState('');
   const [showStaffPassword, setShowStaffPassword] = useState(false);
 
+  // Sync staff inputs whenever settings change
+  useEffect(() => {
+    if (settings.staffLoginId) {
+      setStaffLoginIdInput(settings.staffLoginId);
+    }
+    if (settings.staffPassword) {
+      setStaffPasswordInput(settings.staffPassword);
+    }
+  }, [settings.staffLoginId, settings.staffPassword]);
+
   // Product search in admin
   const [productSearch, setProductSearch] = useState('');
   const [orderFilter, setOrderFilter] = useState<string>('all');
@@ -181,18 +191,21 @@ export const AdminPanel: React.FC = () => {
     setStaffCredSuccess('');
     setStaffCredError('');
 
-    if (!staffLoginIdInput.trim() || !staffPasswordInput.trim()) {
+    const trimmedId = staffLoginIdInput.trim();
+    const trimmedPass = staffPasswordInput.trim();
+
+    if (!trimmedId || !trimmedPass) {
       setStaffCredError('Staff Login ID and Password cannot be empty.');
       return;
     }
-    if (staffLoginIdInput.trim() === 'aditto13552b') {
+    if (trimmedId === 'aditto13552b') {
       setStaffCredError('Staff cannot use the Master username "aditto13552b".');
       return;
     }
 
-    updateStaffCredentials(staffLoginIdInput.trim(), staffPasswordInput.trim());
-    setStaffCredSuccess('Staff credentials successfully updated! Staff can now sign in with this new ID and password.');
-    setTimeout(() => setStaffCredSuccess(''), 4000);
+    updateStaffCredentials(trimmedId, trimmedPass);
+    setStaffCredSuccess(`Staff credentials successfully updated! Staff member can now login with ID "${trimmedId}".`);
+    setTimeout(() => setStaffCredSuccess(''), 5000);
   };
 
   // Open Product Modal for Create or Edit
@@ -623,7 +636,7 @@ export const AdminPanel: React.FC = () => {
 
   // 2. Full Admin Dashboard
   return (
-    <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16 transition-colors">
+    <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16 transition-colors w-full max-w-full overflow-x-hidden">
       
       {/* Top Admin Header */}
       <div className="bg-slate-900 dark:bg-slate-950 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
@@ -2688,7 +2701,7 @@ export const AdminPanel: React.FC = () => {
               <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs text-left max-w-sm mx-auto space-y-1 font-mono">
                 <div className="text-[11px] font-sans font-bold text-slate-500 dark:text-slate-400 uppercase">Active Session</div>
                 <div className="text-slate-900 dark:text-white font-bold">Role: 👤 Staff Member</div>
-                <div className="text-slate-600 dark:text-slate-400">Login ID: {adminUser}</div>
+                <div className="text-slate-600 dark:text-slate-400">Login ID: {adminUser?.id || 'staff'}</div>
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -2732,7 +2745,7 @@ export const AdminPanel: React.FC = () => {
               <div className="bg-slate-800/80 backdrop-blur-xs p-4 rounded-2xl border border-slate-700 space-y-1.5 shrink-0 text-left sm:text-right">
                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Current Session</span>
                 <div className="text-base font-black font-mono text-amber-400">
-                  👑 {adminUser} (Master)
+                  👑 {adminUser?.name || adminUser?.id || 'Aditto (Master)'}
                 </div>
                 <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>

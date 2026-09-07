@@ -47,7 +47,7 @@ export const PortalLoginSection: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Logged in as: <strong className="text-white font-mono">{adminUser}</strong> ({adminRole === 'master' ? '👑 Master Admin' : '👤 Staff Member'})
+                Logged in as: <strong className="text-white font-mono">{adminUser?.name || adminUser?.id || 'Admin'}</strong> ({adminRole === 'master' ? '👑 Master Admin' : '👤 Staff Member'})
               </p>
             </div>
           </div>

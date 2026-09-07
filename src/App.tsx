@@ -88,7 +88,7 @@ const MainShop: React.FC = () => {
   const activeCategoryObj = INITIAL_CATEGORIES.find((c) => c.id === selectedCategory);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen w-full max-w-full overflow-x-hidden">
       <Navbar />
       <FlashSaleBanner />
 

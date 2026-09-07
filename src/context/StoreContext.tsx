@@ -184,6 +184,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const saved = localStorage.getItem('bredvex_admin_role');
       if (saved === 'master' || saved === 'staff') return saved;
+      if (localStorage.getItem('bredvex_admin_auth') === 'true') {
+        return 'master';
+      }
     } catch {
       // fallback
     }
@@ -194,6 +197,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const saved = localStorage.getItem('bredvex_admin_user');
       if (saved) return JSON.parse(saved);
+      if (localStorage.getItem('bredvex_admin_auth') === 'true') {
+        return { id: MASTER_LOGIN_ID, name: 'Master Admin', role: 'master' };
+      }
     } catch {
       // fallback
     }
@@ -349,6 +355,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.error('Failed to save admin auth:', e);
     }
   }, [isAdminAuthenticated]);
+
+  useEffect(() => {
+    try {
+      if (adminRole) {
+        localStorage.setItem('bredvex_admin_role', adminRole);
+      } else {
+        localStorage.removeItem('bredvex_admin_role');
+      }
+    } catch (e) {
+      console.error('Failed to save admin role:', e);
+    }
+  }, [adminRole]);
+
+  useEffect(() => {
+    try {
+      if (adminUser) {
+        localStorage.setItem('bredvex_admin_user', JSON.stringify(adminUser));
+      } else {
+        localStorage.removeItem('bredvex_admin_user');
+      }
+    } catch (e) {
+      console.error('Failed to save admin user:', e);
+    }
+  }, [adminUser]);
 
   // Calculations
   const cartSubtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
@@ -768,10 +798,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // 1. Unchangeable Master Login (Hardcoded Master Admin)
     if (cleanId === MASTER_LOGIN_ID && cleanPass === MASTER_LOGIN_PASSWORD) {
+      const user: AdminUser = { id: MASTER_LOGIN_ID, name: 'Aditto (Master)', role: 'master' };
       setIsAdminAuthenticated(true);
       setAdminRole('master');
-      const user: AdminUser = { id: MASTER_LOGIN_ID, name: 'Aditto (Master)', role: 'master' };
       setAdminUser(user);
+      try {
+        localStorage.setItem('bredvex_admin_auth', 'true');
+        localStorage.setItem('bredvex_admin_role', 'master');
+        localStorage.setItem('bredvex_admin_user', JSON.stringify(user));
+      } catch (e) {
+        console.error(e);
+      }
       return { success: true, role: 'master', message: '👑 Welcome Master Admin Aditto!' };
     }
 
@@ -782,10 +819,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       (cleanId.toLowerCase() === legacyId.toLowerCase() || cleanId.toLowerCase() === 'admin' || cleanId.toLowerCase() === 'adittoadmin') &&
       (cleanPass === legacyPass || cleanPass === '123456')
     ) {
+      const user: AdminUser = { id: cleanId, name: 'Master Administrator', role: 'master' };
       setIsAdminAuthenticated(true);
       setAdminRole('master');
-      const user: AdminUser = { id: cleanId, name: 'Master Administrator', role: 'master' };
       setAdminUser(user);
+      try {
+        localStorage.setItem('bredvex_admin_auth', 'true');
+        localStorage.setItem('bredvex_admin_role', 'master');
+        localStorage.setItem('bredvex_admin_user', JSON.stringify(user));
+      } catch (e) {
+        console.error(e);
+      }
       return { success: true, role: 'master', message: '👑 Logged in with Master privileges.' };
     }
 
@@ -793,13 +837,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const staffId = (settings.staffLoginId || 'staff').trim();
     const staffPass = (settings.staffPassword || 'staff123').trim();
     if (
-      (cleanId.toLowerCase() === staffId.toLowerCase() || cleanId.toLowerCase() === 'staff') &&
-      (cleanPass === staffPass || cleanPass === 'staff123')
+      cleanId.toLowerCase() === staffId.toLowerCase() &&
+      cleanPass === staffPass
     ) {
+      const user: AdminUser = { id: cleanId, name: 'Store Staff Member', role: 'staff' };
       setIsAdminAuthenticated(true);
       setAdminRole('staff');
-      const user: AdminUser = { id: cleanId, name: 'Store Staff Member', role: 'staff' };
       setAdminUser(user);
+      try {
+        localStorage.setItem('bredvex_admin_auth', 'true');
+        localStorage.setItem('bredvex_admin_role', 'staff');
+        localStorage.setItem('bredvex_admin_user', JSON.stringify(user));
+      } catch (e) {
+        console.error(e);
+      }
       return { success: true, role: 'staff', message: '👤 Logged in as Staff (Operational mode).' };
     }
 
@@ -822,15 +873,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Staff Credentials Update (Only Master Admins can update staff access)
   const updateStaffCredentials = (staffId: string, staffPass: string) => {
-    if (adminRole !== 'master') {
-      alert('Unauthorized: Only Master Admins can update Staff credentials.');
+    if (adminRole === 'staff') {
       return;
     }
-    setSettings(prev => ({
-      ...prev,
-      staffLoginId: staffId.trim(),
-      staffPassword: staffPass.trim()
-    }));
+    const cleanId = staffId.trim();
+    const cleanPass = staffPass.trim();
+    setSettings(prev => {
+      const updated = {
+        ...prev,
+        staffLoginId: cleanId,
+        staffPassword: cleanPass
+      };
+      try {
+        localStorage.setItem('bredvex_settings', JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to save updated staff credentials:', e);
+      }
+      return updated;
+    });
   };
 
   // Admin Product Operations

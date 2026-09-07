@@ -18,10 +18,10 @@ export const WhatsAppChatButton: React.FC = () => {
   const whatsappUrl = `https://wa.me/${formattedPhone}?text=${message}`;
 
   return (
-    <aside aria-label="WhatsApp Customer Support" className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2 pointer-events-none">
+    <aside aria-label="WhatsApp Customer Support" className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end gap-2 pointer-events-none max-w-[calc(100vw-2rem)]">
       {/* Floating Prompt Bubble */}
       {showTooltip && (
-        <div className="pointer-events-auto max-w-xs bg-white text-slate-800 p-3 rounded-2xl shadow-xl border border-emerald-100 flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-3 duration-300">
+        <div className="pointer-events-auto w-full max-w-[280px] sm:max-w-xs bg-white text-slate-800 p-3 rounded-2xl shadow-xl border border-emerald-100 flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-3 duration-300">
           <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
             <MessageCircle className="w-4 h-4" />
           </div>
