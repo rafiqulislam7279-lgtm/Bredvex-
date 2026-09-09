@@ -102,19 +102,39 @@ export const Footer: React.FC = () => {
                 Supported Bangladeshi Payment Methods:
               </span>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="px-2.5 py-1 rounded-md bg-[#E2136E] text-white font-bold text-[11px] tracking-wide shadow-xs">
-                  bKash বিকাশ
+                {/* bKash */}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-pink-50 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-800/60 text-[#E2136E] dark:text-pink-400 font-bubbly font-bold text-xs shadow-xs hover:scale-105 transition-transform">
+                  <span className="w-5 h-5 bg-white rounded-md flex items-center justify-center p-0.5 shadow-2xs shrink-0">
+                    <img src="/logos/bkash.svg" alt="bKash" className="h-3.5 w-auto object-contain" />
+                  </span>
+                  <span>bKash বিকাশ</span>
                 </span>
-                <span className="px-2.5 py-1 rounded-md bg-[#F7931E] text-white font-bold text-[11px] tracking-wide shadow-xs">
-                  Nagad নগদ
+
+                {/* Nagad */}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[#F7931E] dark:text-amber-400 font-bubbly font-bold text-xs shadow-xs hover:scale-105 transition-transform">
+                  <span className="w-5 h-5 bg-white rounded-md flex items-center justify-center p-0.5 shadow-2xs shrink-0">
+                    <img src="/logos/nagad.svg" alt="Nagad" className="h-3.5 w-auto object-contain" />
+                  </span>
+                  <span>Nagad নগদ</span>
                 </span>
-                <span className="px-2.5 py-1 rounded-md bg-[#8C3494] text-white font-bold text-[11px] tracking-wide shadow-xs">
-                  Rocket রকেট
+
+                {/* Rocket */}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 text-[#8C3494] dark:text-purple-400 font-bubbly font-bold text-xs shadow-xs hover:scale-105 transition-transform">
+                  <span className="w-5 h-5 bg-white rounded-md flex items-center justify-center p-0.5 shadow-2xs shrink-0">
+                    <img src="/logos/rocket.svg" alt="Rocket" className="h-3.5 w-auto object-contain" onError={(e) => { e.currentTarget.src = '/logos/rocket.png'; }} />
+                  </span>
+                  <span>Rocket রকেট</span>
                 </span>
-                <span className="px-2.5 py-1 rounded-md bg-emerald-600 text-white font-bold text-[11px] tracking-wide shadow-xs">
-                  Cash on Delivery
+
+                {/* COD */}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 font-bubbly font-bold text-xs shadow-xs hover:scale-105 transition-transform">
+                  <span className="w-5 h-5 bg-emerald-600 text-white rounded-md flex items-center justify-center font-bold text-[10px] shrink-0">
+                    ৳
+                  </span>
+                  <span>Cash on Delivery</span>
                 </span>
-                <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-[11px] border border-slate-200 dark:border-slate-700">
+
+                <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-[11px] border border-slate-200 dark:border-slate-700">
                   Visa / Master
                 </span>
               </div>

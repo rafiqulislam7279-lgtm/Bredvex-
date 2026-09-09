@@ -356,69 +356,94 @@ export const CheckoutModal: React.FC = () => {
                   {/* bKash */}
                   <button
                     type="button"
+                    id="btn-checkout-bkash"
                     onClick={() => setPaymentMethod('bkash')}
-                    className={`p-3 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    className={`p-3 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 ${
                       paymentMethod === 'bkash'
-                        ? 'border-[#E2136E] bg-pink-50/50 shadow-xs'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                        ? 'border-[#E2136E] bg-pink-50/70 shadow-md shadow-pink-500/10 ring-2 ring-pink-500/20'
+                        : 'border-slate-200 bg-white hover:border-pink-300 hover:bg-pink-50/30'
                     }`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-[#E2136E] text-white flex items-center justify-center font-bold text-xs">
-                      ব
+                    <div className="w-14 h-10 bg-white rounded-xl shadow-xs border border-pink-100 flex items-center justify-center p-1 overflow-hidden">
+                      <img
+                        src="/logos/bkash.svg"
+                        alt="bKash"
+                        className="max-h-full max-w-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://upload.wikimedia.org/wikipedia/en/6/68/BKash_logo.svg';
+                        }}
+                      />
                     </div>
-                    <span className="text-xs font-bold text-slate-900">bKash</span>
-                    <span className="text-[10px] text-[#E2136E] font-medium">বিকাশ পেমেন্ট</span>
+                    <span className="font-bubbly text-sm font-extrabold text-[#E2136E] tracking-tight">bKash</span>
+                    <span className="font-bubbly text-[11px] font-bold text-[#E2136E]">বিকাশ পেমেন্ট</span>
                   </button>
 
                   {/* Nagad */}
                   <button
                     type="button"
+                    id="btn-checkout-nagad"
                     onClick={() => setPaymentMethod('nagad')}
-                    className={`p-3 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    className={`p-3 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 ${
                       paymentMethod === 'nagad'
-                        ? 'border-[#F7931E] bg-amber-50/50 shadow-xs'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                        ? 'border-[#F7931E] bg-amber-50/70 shadow-md shadow-amber-500/10 ring-2 ring-amber-500/20'
+                        : 'border-slate-200 bg-white hover:border-amber-300 hover:bg-amber-50/30'
                     }`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-[#F7931E] text-white flex items-center justify-center font-bold text-xs">
-                      ন
+                    <div className="w-14 h-10 bg-white rounded-xl shadow-xs border border-amber-100 flex items-center justify-center p-1 overflow-hidden">
+                      <img
+                        src="/logos/nagad.svg"
+                        alt="Nagad"
+                        className="max-h-full max-w-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://upload.wikimedia.org/wikipedia/bn/9/97/%E0%A6%A8%E0%A6%97%E0%A6%A6%E0%A7%87%E0%A6%B0_%E0%A6%B2%E0%A7%8B%E0%A6%97%E0%A7%8B.svg';
+                        }}
+                      />
                     </div>
-                    <span className="text-xs font-bold text-slate-900">Nagad</span>
-                    <span className="text-[10px] text-[#F7931E] font-medium">নগদ পেমেন্ট</span>
+                    <span className="font-bubbly text-sm font-extrabold text-[#F7931E] tracking-tight">Nagad</span>
+                    <span className="font-bubbly text-[11px] font-bold text-[#F7931E]">নগদ পেমেন্ট</span>
                   </button>
 
                   {/* Rocket */}
                   <button
                     type="button"
+                    id="btn-checkout-rocket"
                     onClick={() => setPaymentMethod('rocket')}
-                    className={`p-3 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    className={`p-3 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 ${
                       paymentMethod === 'rocket'
-                        ? 'border-[#8C3494] bg-purple-50/50 shadow-xs'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                        ? 'border-[#8C3494] bg-purple-50/70 shadow-md shadow-purple-500/10 ring-2 ring-purple-500/20'
+                        : 'border-slate-200 bg-white hover:border-purple-300 hover:bg-purple-50/30'
                     }`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-[#8C3494] text-white flex items-center justify-center font-bold text-xs">
-                      র
+                    <div className="w-14 h-10 bg-white rounded-xl shadow-xs border border-purple-100 flex items-center justify-center p-1 overflow-hidden">
+                      <img
+                        src="/logos/rocket.svg"
+                        alt="Rocket"
+                        className="max-h-full max-w-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = '/logos/rocket.png';
+                        }}
+                      />
                     </div>
-                    <span className="text-xs font-bold text-slate-900">Rocket</span>
-                    <span className="text-[10px] text-[#8C3494] font-medium">রকেট পেমেন্ট</span>
+                    <span className="font-bubbly text-sm font-extrabold text-[#8C3494] tracking-tight">Rocket</span>
+                    <span className="font-bubbly text-[11px] font-bold text-[#8C3494]">রকেট পেমেন্ট</span>
                   </button>
 
                   {/* COD */}
                   <button
                     type="button"
+                    id="btn-checkout-cod"
                     onClick={() => setPaymentMethod('cod')}
-                    className={`p-3 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    className={`p-3 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 ${
                       paymentMethod === 'cod'
-                        ? 'border-emerald-600 bg-emerald-50/50 shadow-xs'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                        ? 'border-emerald-600 bg-emerald-50/70 shadow-md shadow-emerald-600/10 ring-2 ring-emerald-600/20'
+                        : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/30'
                     }`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
-                      ৳
+                    <div className="w-14 h-10 bg-emerald-50 rounded-xl shadow-xs border border-emerald-200 flex items-center justify-center p-1">
+                      <span className="font-bubbly text-emerald-700 font-black text-xs tracking-wider">৳ COD</span>
                     </div>
-                    <span className="text-xs font-bold text-slate-900">Cash on Delivery</span>
-                    <span className="text-[10px] text-emerald-700 font-medium">হাতে পেয়ে টাকা দিন</span>
+                    <span className="font-bubbly text-xs sm:text-sm font-extrabold text-slate-800 tracking-tight">Cash on Delivery</span>
+                    <span className="font-bubbly text-[11px] font-bold text-emerald-700">হাতে পেয়ে টাকা দিন</span>
                   </button>
                 </div>
               </div>
@@ -427,14 +452,19 @@ export const CheckoutModal: React.FC = () => {
               {paymentMethod === 'bkash' && (
                 <div className="p-4 rounded-2xl bg-pink-50/70 border border-pink-200 space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-bold text-[#E2136E] uppercase tracking-wider">bKash {settings.bkashType} Number</span>
-                      <p className="text-base font-extrabold font-mono text-slate-900">{settings.bkashNumber}</p>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-12 h-10 bg-white rounded-xl border border-pink-200 shadow-xs flex items-center justify-center p-1">
+                        <img src="/logos/bkash.svg" alt="bKash" className="max-h-full max-w-full object-contain" />
+                      </div>
+                      <div>
+                        <span className="font-bubbly text-xs font-bold text-[#E2136E] uppercase tracking-wider block">bKash {settings.bkashType} Number</span>
+                        <p className="font-bubbly text-base sm:text-lg font-black font-mono text-slate-900">{settings.bkashNumber}</p>
+                      </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleCopy(settings.bkashNumber)}
-                      className="px-2.5 py-1 text-xs font-semibold bg-white border border-pink-300 text-[#E2136E] rounded-lg flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 text-xs font-bubbly font-bold bg-white border border-pink-300 text-[#E2136E] rounded-xl flex items-center gap-1 cursor-pointer hover:bg-pink-50 transition-colors shadow-xs"
                     >
                       {copiedNumber ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedNumber ? 'Copied' : 'Copy'}</span>
@@ -442,8 +472,8 @@ export const CheckoutModal: React.FC = () => {
                   </div>
 
                   {/* Step Instructions */}
-                  <div className="text-xs text-slate-700 bg-white p-3 rounded-xl border border-pink-100 space-y-1">
-                    <p className="font-bold text-[#E2136E]">পেমেন্ট করার নিয়মাবলী:</p>
+                  <div className="text-xs text-slate-700 bg-white p-3.5 rounded-xl border border-pink-100 space-y-1.5 leading-relaxed">
+                    <p className="font-bubbly font-bold text-[#E2136E] text-sm">পেমেন্ট করার নিয়মাবলী:</p>
                     <p>১. আপনার bKash App ওপেন করুন অথবা dial করুন *247#</p>
                     <p>২. {settings.bkashType === 'Merchant' ? 'Make Payment' : 'Send Money'} অপশনে যান এবং উপরের নম্বরে <strong>৳{cartGrandTotal.toLocaleString()}</strong> পাঠান।</p>
                     <p>৩. রেফারেন্স হিসেবে লিখুন: <strong>BREDVEX</strong></p>
@@ -453,7 +483,7 @@ export const CheckoutModal: React.FC = () => {
                   {/* Inputs */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="text-xs font-bold text-slate-700">Your bKash Number (আপনার নম্বর)</label>
+                      <label className="text-xs font-bold text-slate-700 font-bubbly text-[#E2136E]">Your bKash Number (আপনার নম্বর)</label>
                       <input
                         type="tel"
                         value={paymentSenderNumber}
@@ -463,7 +493,7 @@ export const CheckoutModal: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-700">Transaction ID (TrxID)</label>
+                      <label className="text-xs font-bold text-slate-700 font-bubbly text-[#E2136E]">Transaction ID (TrxID)</label>
                       <input
                         type="text"
                         value={transactionId}
@@ -479,22 +509,27 @@ export const CheckoutModal: React.FC = () => {
               {paymentMethod === 'nagad' && (
                 <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-bold text-[#F7931E] uppercase tracking-wider">Nagad {settings.nagadType} Number</span>
-                      <p className="text-base font-extrabold font-mono text-slate-900">{settings.nagadNumber}</p>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-12 h-10 bg-white rounded-xl border border-amber-200 shadow-xs flex items-center justify-center p-1">
+                        <img src="/logos/nagad.svg" alt="Nagad" className="max-h-full max-w-full object-contain" />
+                      </div>
+                      <div>
+                        <span className="font-bubbly text-xs font-bold text-[#F7931E] uppercase tracking-wider block">Nagad {settings.nagadType} Number</span>
+                        <p className="font-bubbly text-base sm:text-lg font-black font-mono text-slate-900">{settings.nagadNumber}</p>
+                      </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleCopy(settings.nagadNumber)}
-                      className="px-2.5 py-1 text-xs font-semibold bg-white border border-amber-300 text-[#F7931E] rounded-lg flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 text-xs font-bubbly font-bold bg-white border border-amber-300 text-[#F7931E] rounded-xl flex items-center gap-1 cursor-pointer hover:bg-amber-50 transition-colors shadow-xs"
                     >
                       {copiedNumber ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedNumber ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
 
-                  <div className="text-xs text-slate-700 bg-white p-3 rounded-xl border border-amber-100 space-y-1">
-                    <p className="font-bold text-[#F7931E]">নগদ পেমেন্ট নির্দেশিকা:</p>
+                  <div className="text-xs text-slate-700 bg-white p-3.5 rounded-xl border border-amber-100 space-y-1.5 leading-relaxed">
+                    <p className="font-bubbly font-bold text-[#F7931E] text-sm">নগদ পেমেন্ট নির্দেশিকা:</p>
                     <p>১. নগদ অ্যাপ অথবা *167# ডায়াল করুন।</p>
                     <p>২. {settings.nagadType === 'Merchant' ? 'Merchant Pay' : 'Send Money'} সিলেক্ট করে <strong>৳{cartGrandTotal.toLocaleString()}</strong> টাকা প্রেরণ করুন।</p>
                     <p>৩. নিচে আপনার নগদ একাউন্ট নম্বর এবং প্রাপ্ত TrxID প্রদান করুন।</p>
@@ -502,7 +537,7 @@ export const CheckoutModal: React.FC = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="text-xs font-bold text-slate-700">Your Nagad Number</label>
+                      <label className="text-xs font-bold text-slate-700 font-bubbly text-[#F7931E]">Your Nagad Number (আপনার নগদ নম্বর)</label>
                       <input
                         type="tel"
                         value={paymentSenderNumber}
@@ -512,7 +547,7 @@ export const CheckoutModal: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-700">Transaction ID (TrxID)</label>
+                      <label className="text-xs font-bold text-slate-700 font-bubbly text-[#F7931E]">Transaction ID (TrxID)</label>
                       <input
                         type="text"
                         value={transactionId}
@@ -528,45 +563,50 @@ export const CheckoutModal: React.FC = () => {
               {paymentMethod === 'rocket' && (
                 <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200 space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-bold text-[#8C3494] uppercase tracking-wider">Rocket {settings.rocketType} Number</span>
-                      <p className="text-base font-extrabold font-mono text-slate-900">{settings.rocketNumber}</p>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-12 h-10 bg-white rounded-xl border border-purple-200 shadow-xs flex items-center justify-center p-1">
+                        <img src="/logos/rocket.svg" alt="Rocket" className="max-h-full max-w-full object-contain" onError={(e) => { e.currentTarget.src = '/logos/rocket.png'; }} />
+                      </div>
+                      <div>
+                        <span className="font-bubbly text-xs font-bold text-[#8C3494] uppercase tracking-wider block">Rocket {settings.rocketType} Number</span>
+                        <p className="font-bubbly text-base sm:text-lg font-black font-mono text-slate-900">{settings.rocketNumber}</p>
+                      </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleCopy(settings.rocketNumber)}
-                      className="px-2.5 py-1 text-xs font-semibold bg-white border border-purple-300 text-[#8C3494] rounded-lg flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 text-xs font-bubbly font-bold bg-white border border-purple-300 text-[#8C3494] rounded-xl flex items-center gap-1 cursor-pointer hover:bg-purple-50 transition-colors shadow-xs"
                     >
                       {copiedNumber ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedNumber ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
 
-                  <div className="text-xs text-slate-700 bg-white p-3 rounded-xl border border-purple-100 space-y-1">
-                    <p className="font-bold text-[#8C3494]">রকেট পেমেন্ট নির্দেশিকা:</p>
+                  <div className="text-xs text-slate-700 bg-white p-3.5 rounded-xl border border-purple-100 space-y-1.5 leading-relaxed">
+                    <p className="font-bubbly font-bold text-[#8C3494] text-sm">রকেট পেমেন্ট নির্দেশিকা:</p>
                     <p>১. রকেট অ্যাপ অথবা *322# ডায়াল করে উপরে প্রদত্ত নম্বরে <strong>৳{cartGrandTotal.toLocaleString()}</strong> টাকা পাঠান।</p>
                     <p>২. পেমেন্ট শেষে ট্রানজেকশন আইডি নিচে প্রবেশ করান।</p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="text-xs font-bold text-slate-700">Your Rocket Account</label>
+                      <label className="text-xs font-bold text-slate-700 font-bubbly text-[#8C3494]">Your Rocket Account (আপনার রকেট নম্বর)</label>
                       <input
                         type="tel"
                         value={paymentSenderNumber}
                         onChange={(e) => setPaymentSenderNumber(e.target.value)}
                         placeholder="01XXXXXXXXX"
-                        className="w-full mt-1 px-3 py-2 text-sm bg-white border border-purple-200 rounded-xl outline-hidden font-mono"
+                        className="w-full mt-1 px-3 py-2 text-sm bg-white border border-purple-200 rounded-xl outline-hidden focus:border-[#8C3494] font-mono"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-700">Transaction ID (TrxID)</label>
+                      <label className="text-xs font-bold text-slate-700 font-bubbly text-[#8C3494]">Transaction ID (TrxID)</label>
                       <input
                         type="text"
                         value={transactionId}
                         onChange={(e) => setTransactionId(e.target.value)}
                         placeholder="e.g. RCKT8291"
-                        className="w-full mt-1 px-3 py-2 text-sm bg-white border border-purple-200 rounded-xl outline-hidden font-mono uppercase"
+                        className="w-full mt-1 px-3 py-2 text-sm bg-white border border-purple-200 rounded-xl outline-hidden focus:border-[#8C3494] font-mono uppercase"
                       />
                     </div>
                   </div>

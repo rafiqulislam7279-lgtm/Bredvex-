@@ -326,8 +326,27 @@ export const CartDrawer: React.FC = () => {
                 <ArrowRight className="w-4 h-4" />
               </button>
 
+              {/* Payment badges strip */}
+              <div className="pt-1 flex items-center justify-center gap-1.5 flex-wrap">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-pink-50 border border-pink-200 text-[#E2136E] font-bubbly font-bold text-[10px]">
+                  <img src="/logos/bkash.svg" alt="bKash" className="h-3 w-auto object-contain" />
+                  <span>bKash</span>
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-[#F7931E] font-bubbly font-bold text-[10px]">
+                  <img src="/logos/nagad.svg" alt="Nagad" className="h-3 w-auto object-contain" />
+                  <span>Nagad</span>
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-50 border border-purple-200 text-[#8C3494] font-bubbly font-bold text-[10px]">
+                  <img src="/logos/rocket.svg" alt="Rocket" className="h-3 w-auto object-contain" onError={(e) => { e.currentTarget.src = '/logos/rocket.png'; }} />
+                  <span>Rocket</span>
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-bubbly font-bold text-[10px]">
+                  <span>৳ COD</span>
+                </span>
+              </div>
+
               <p className="text-[10px] text-center text-slate-400">
-                🔒 100% Verified Delivery across Bangladesh • Pay via bKash, Nagad or Cash on Delivery
+                🔒 100% Verified Delivery across Bangladesh • Cash on Delivery & MFS Supported
               </p>
             </div>
           )}

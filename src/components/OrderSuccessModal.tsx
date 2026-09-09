@@ -73,8 +73,25 @@ export const OrderSuccessModal: React.FC = () => {
                 <p className="text-[11px] text-emerald-700">Courier Partner: {orderSuccessData.trackingCourier}</p>
               </div>
             </div>
-            <span className="px-2.5 py-1 text-[10px] font-bold rounded-full bg-emerald-600 text-white uppercase">
-              {orderSuccessData.paymentMethod.toUpperCase()}
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bubbly font-bold rounded-full uppercase shadow-xs ${
+              orderSuccessData.paymentMethod === 'bkash'
+                ? 'bg-[#E2136E] text-white'
+                : orderSuccessData.paymentMethod === 'nagad'
+                ? 'bg-[#F7931E] text-white'
+                : orderSuccessData.paymentMethod === 'rocket'
+                ? 'bg-[#8C3494] text-white'
+                : 'bg-emerald-600 text-white'
+            }`}>
+              {orderSuccessData.paymentMethod === 'bkash' && (
+                <img src="/logos/bkash.svg" alt="bKash" className="h-3.5 w-auto object-contain bg-white px-1 py-0.5 rounded-sm" />
+              )}
+              {orderSuccessData.paymentMethod === 'nagad' && (
+                <img src="/logos/nagad.svg" alt="Nagad" className="h-3.5 w-auto object-contain bg-white px-1 py-0.5 rounded-sm" />
+              )}
+              {orderSuccessData.paymentMethod === 'rocket' && (
+                <img src="/logos/rocket.svg" alt="Rocket" className="h-3.5 w-auto object-contain bg-white px-1 py-0.5 rounded-sm" onError={(e) => { e.currentTarget.src = '/logos/rocket.png'; }} />
+              )}
+              <span>{orderSuccessData.paymentMethod}</span>
             </span>
           </div>
 
