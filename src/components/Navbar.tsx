@@ -49,35 +49,35 @@ export const Navbar: React.FC = () => {
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 shadow-xs transition-colors">
       {/* Top Announcement Bar */}
       {settings.showAnnouncement && settings.announcementText && (
-        <div className="bg-slate-900 dark:bg-slate-950 text-slate-100 text-xs py-2 px-4 border-b border-slate-800 dark:border-slate-800/80">
+        <div className="bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs py-2 px-4 border-b border-slate-200 dark:border-slate-800/80 transition-colors">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
-              <span className="inline-flex items-center bg-rose-500/20 text-rose-300 font-semibold px-2.5 py-0.5 rounded-full text-[11px] border border-rose-500/30">
+              <span className="inline-flex items-center bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-semibold px-2.5 py-0.5 rounded-full text-[11px] border border-rose-200 dark:border-rose-500/30">
                 BREDVEX
               </span>
-              <p className="truncate text-slate-200 font-medium">
+              <p className="truncate text-slate-700 dark:text-slate-200 font-medium">
                 {settings.announcementText}
               </p>
             </div>
-            <div className="hidden md:flex items-center gap-5 text-slate-400 text-[12px]">
-              <div className="flex items-center gap-1.5 hover:text-white transition-colors">
-                <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Hotline: <strong className="text-slate-200">{settings.contactPhone}</strong></span>
+            <div className="hidden md:flex items-center gap-5 text-slate-600 dark:text-slate-400 text-[12px]">
+              <div className="flex items-center gap-1.5 hover:text-slate-900 dark:hover:text-white transition-colors">
+                <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Hotline: <strong className="text-slate-900 dark:text-slate-200">{settings.contactPhone}</strong></span>
               </div>
               <button 
                 id="btn-nav-track-order-top"
                 onClick={() => setIsTrackOrderOpen(true)}
-                className="flex items-center gap-1 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                className="flex items-center gap-1 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors cursor-pointer"
               >
-                <Truck className="w-3.5 h-3.5 text-sky-400" />
+                <Truck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                 <span>Track Order</span>
               </button>
               <button
                 id="btn-nav-admin-top"
                 onClick={() => setActiveView('admin')}
-                className="flex items-center gap-1 text-amber-300 hover:text-amber-200 font-medium transition-colors cursor-pointer bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20"
+                className="flex items-center gap-1 text-amber-800 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200 font-medium transition-colors cursor-pointer bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 px-2.5 py-0.5 rounded-md border border-amber-300/80 dark:border-amber-500/20"
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 <span>
                   {isAdminAuthenticated 
                     ? (adminRole === 'master' ? '👑 Master Portal' : '👤 Staff Portal') 
@@ -197,19 +197,19 @@ export const Navbar: React.FC = () => {
             <button
               id="btn-nav-cart"
               onClick={() => setIsCartOpen(true)}
-              className="flex items-center gap-2.5 px-3.5 py-2 text-white bg-slate-900 dark:bg-rose-600 hover:bg-rose-600 dark:hover:bg-rose-500 rounded-xl transition-all shadow-sm group cursor-pointer"
+              className="flex items-center gap-2.5 px-3.5 py-2 text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition-all shadow-sm group cursor-pointer"
               aria-label="Shopping Cart"
             >
               <div className="relative">
                 <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold text-slate-900 bg-amber-400 rounded-full border border-slate-900">
+                  <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold text-slate-900 bg-amber-400 rounded-full border border-white dark:border-slate-900">
                     {cartCount}
                   </span>
                 )}
               </div>
               <div className="hidden sm:flex flex-col text-left leading-tight">
-                <span className="text-[10px] font-medium text-slate-300 dark:text-rose-100 group-hover:text-rose-100">Cart</span>
+                <span className="text-[10px] font-medium text-rose-100 group-hover:text-white">Cart</span>
                 <span className="text-xs font-bold font-mono">৳{cartGrandTotal.toLocaleString()}</span>
               </div>
             </button>
@@ -257,14 +257,14 @@ export const Navbar: React.FC = () => {
 
         {/* Categories Bar (Desktop) */}
         {activeView === 'shop' && (
-          <div className="hidden md:flex items-center gap-1 py-2.5 border-t border-slate-100 dark:border-slate-800/80 overflow-x-auto scrollbar-none text-xs font-semibold">
+          <div className="hidden md:flex items-center gap-1 py-2.5 border-t border-slate-200/80 dark:border-slate-800/80 overflow-x-auto scrollbar-none text-xs font-semibold">
             <button
               id="cat-tab-all"
               onClick={() => handleCategoryClick('all')}
               className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer whitespace-nowrap ${
                 selectedCategory === 'all'
-                  ? 'bg-slate-900 dark:bg-rose-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               ✨ All Collection
@@ -277,7 +277,7 @@ export const Navbar: React.FC = () => {
                 className={`px-3.5 py-1.5 rounded-full transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedCategory === cat.id
                     ? 'bg-rose-600 text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 <span>{cat.name}</span>
@@ -304,8 +304,8 @@ export const Navbar: React.FC = () => {
               onClick={() => handleCategoryClick('all')}
               className={`p-2.5 text-xs text-left rounded-lg font-medium ${
                 selectedCategory === 'all' 
-                  ? 'bg-slate-900 dark:bg-rose-600 text-white' 
-                  : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                  ? 'bg-rose-600 text-white' 
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
               }`}
             >
               🔥 All Products
@@ -317,7 +317,7 @@ export const Navbar: React.FC = () => {
                 className={`p-2.5 text-xs text-left rounded-lg font-medium flex flex-col ${
                   selectedCategory === cat.id 
                     ? 'bg-rose-600 text-white' 
-                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
                 }`}
               >
                 <span>{cat.name}</span>

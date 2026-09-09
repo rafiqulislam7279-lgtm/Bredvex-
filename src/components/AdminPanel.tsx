@@ -42,7 +42,7 @@ import {
   Users,
   UserCheck
 } from 'lucide-react';
-import { useStore } from '../context/StoreContext';
+import { useStore, MASTER_LOGIN_ID } from '../context/StoreContext';
 import { Product, SiteSettings, Order, CourierSettings } from '../types';
 import { INITIAL_CATEGORIES } from '../data/initialData';
 import { InvoiceModal } from './InvoiceModal';
@@ -198,8 +198,8 @@ export const AdminPanel: React.FC = () => {
       setStaffCredError('Staff Login ID and Password cannot be empty.');
       return;
     }
-    if (trimmedId === 'aditto13552b') {
-      setStaffCredError('Staff cannot use the Master username "aditto13552b".');
+    if (trimmedId === MASTER_LOGIN_ID) {
+      setStaffCredError('This username is reserved for system root access and cannot be used for staff.');
       return;
     }
 
@@ -477,7 +477,7 @@ export const AdminPanel: React.FC = () => {
   // 1. If not authenticated, show modern Admin Login View
   if (!isAdminAuthenticated) {
     return (
-      <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-slate-100 dark:bg-slate-950 transition-colors">
+      <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-white dark:bg-slate-950 transition-colors">
         <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 space-y-6">
           
           {/* Top Bar with Brand & Theme Toggle */}
@@ -636,7 +636,7 @@ export const AdminPanel: React.FC = () => {
 
   // 2. Full Admin Dashboard
   return (
-    <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16 transition-colors w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16 transition-colors w-full max-w-full overflow-x-hidden">
       
       {/* Top Admin Header */}
       <div className="bg-slate-900 dark:bg-slate-950 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
@@ -2754,60 +2754,6 @@ export const AdminPanel: React.FC = () => {
               </div>
             </div>
 
-            {/* Permanent Master Login Card */}
-            <div className="p-6 bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-transparent rounded-3xl border border-amber-400/30 bg-white dark:bg-slate-900 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-sm">
-                    <Crown className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-base font-bold text-slate-900 dark:text-white font-serif">
-                        Permanent Master Root Account (অপরিবর্তনযোগ্য মাস্টার লগইন)
-                      </h4>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950">
-                        IMMUTABLE
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
-                      Unchangeable master root credentials that always provide full administrative ownership and access.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-                    Master Username / Login ID
-                  </span>
-                  <div className="text-base font-black font-mono text-slate-900 dark:text-white mt-0.5">
-                    aditto13552b
-                  </div>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 inline-block">
-                    ✓ Permanent Root Access
-                  </span>
-                </div>
-
-                <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-                    Master Password
-                  </span>
-                  <div className="text-base font-black font-mono text-slate-900 dark:text-white mt-0.5">
-                    aditto13552b
-                  </div>
-                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium mt-1 inline-block">
-                    🔒 Unchangeable Safety Master Key
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-xs text-slate-600 dark:text-slate-400 bg-amber-50/80 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200/80 dark:border-amber-800">
-                🛡️ <strong>Note:</strong> This master account is hardcoded as requested and cannot be accidentally overridden, corrupted, or deleted. You can always log in with <code>aditto13552b</code> to restore full access.
-              </p>
-            </div>
-
             {/* Staff Accounts Management Card */}
             <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-5 shadow-xs">
               <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -2879,7 +2825,7 @@ export const AdminPanel: React.FC = () => {
                       </button>
                     </div>
                     <p className="text-[11px] text-slate-400">
-                      Current: <code className="text-sky-600 font-bold">{settings.staffPassword || 'staff123'}</code>
+                      Current: <code className="text-sky-600 font-bold">{showStaffPassword ? (settings.staffPassword || 'staff123') : '••••••••'}</code>
                     </p>
                   </div>
                 </div>
@@ -3047,7 +2993,7 @@ export const AdminPanel: React.FC = () => {
               <ul className="text-xs space-y-1.5 text-amber-900 dark:text-amber-300 list-disc list-inside">
                 <li>Make sure to write down or memorize your new Login ID and Password before logging out.</li>
                 <li>You can test your new credentials immediately by clicking <strong>"Logout"</strong> in the top right corner and signing back in.</li>
-                <li>If you ever forget your custom password, the system always accepts the immutable Master credentials (<code>aditto13552b</code> / <code>aditto13552b</code>).</li>
+                <li>If you ever forget your custom password, the system always accepts your confidential Master Root key to recover full administrative ownership.</li>
               </ul>
             </div>
 

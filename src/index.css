@@ -15,10 +15,15 @@
     max-width: 100%;
     overflow-x: hidden;
     position: relative;
+    background-color: #ffffff;
+    color: #0f172a;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
   
-  html.dark {
+  html.dark,
+  html.dark body {
+    background-color: #020617;
+    color: #f8fafc;
     color-scheme: dark;
   }
 

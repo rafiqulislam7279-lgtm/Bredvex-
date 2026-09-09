@@ -206,16 +206,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return null;
   });
 
-  // Dark / Light Theme System
+  // Dark / Light Theme System (Defaults to pure white light mode)
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
     try {
       const saved = localStorage.getItem('bredvex_theme');
       if (saved === 'dark' || saved === 'light') return saved;
     } catch {
       // fallback
-    }
-    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
     }
     return 'light';
   });

@@ -88,11 +88,11 @@ const MainShop: React.FC = () => {
   const activeCategoryObj = INITIAL_CATEGORIES.find((c) => c.id === selectedCategory);
 
   return (
-    <div className="flex flex-col min-h-screen w-full max-w-full overflow-x-hidden">
+    <div className="flex flex-col min-h-screen w-full max-w-full overflow-x-hidden bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
       <Navbar />
       <FlashSaleBanner />
 
-      <main className="flex-1">
+      <main className="flex-1 bg-white dark:bg-slate-950 transition-colors">
         {/* Hero Section */}
         <Hero />
 
@@ -100,22 +100,22 @@ const MainShop: React.FC = () => {
         <section id="products-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
           
           {/* Section Heading & Filter Header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 pb-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-6">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-lg bg-rose-50 text-rose-600 font-bold">
+                <span className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 font-bold">
                   <Sparkles className="w-4 h-4" />
                 </span>
-                <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">
+                <span className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
                   Curated Catalog
                 </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-serif">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight font-serif">
                 {selectedCategory === 'all'
                   ? 'All Featured Products'
                   : `${activeCategoryObj?.name || 'Category'} (${activeCategoryObj?.banglaName || ''})`}
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                 Showing {filteredProducts.length} verified item{filteredProducts.length === 1 ? '' : 's'} with express delivery in Bangladesh
               </p>
             </div>
@@ -123,7 +123,7 @@ const MainShop: React.FC = () => {
             {/* Filter and Sort Controls */}
             <div className="flex flex-wrap items-center gap-3">
               {/* In-Stock Toggle */}
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 px-3 py-2 rounded-xl cursor-pointer hover:border-slate-300 transition-colors">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-2 rounded-xl cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition-colors shadow-xs">
                 <input
                   type="checkbox"
                   checked={onlyInStock}
@@ -134,18 +134,18 @@ const MainShop: React.FC = () => {
               </label>
 
               {/* Sort By Dropdown */}
-              <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-xl">
+              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-xs">
                 <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="text-xs font-semibold text-slate-700 bg-transparent outline-hidden cursor-pointer"
+                  className="text-xs font-semibold text-slate-700 dark:text-slate-200 bg-transparent outline-hidden cursor-pointer"
                 >
-                  <option value="featured">Featured & Trending</option>
-                  <option value="price-asc">Price: Low to High (৳)</option>
-                  <option value="price-desc">Price: High to Low (৳)</option>
-                  <option value="rating">Top Rated (★)</option>
-                  <option value="newest">New Arrivals</option>
+                  <option value="featured" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Featured & Trending</option>
+                  <option value="price-asc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Price: Low to High (৳)</option>
+                  <option value="price-desc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Price: High to Low (৳)</option>
+                  <option value="rating" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Top Rated (★)</option>
+                  <option value="newest" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">New Arrivals</option>
                 </select>
               </div>
             </div>
@@ -154,19 +154,19 @@ const MainShop: React.FC = () => {
           {/* Active Search / Category Chips */}
           {(searchKeyword || selectedCategory !== 'all') && (
             <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-              <span className="text-slate-500">Active filters:</span>
+              <span className="text-slate-500 dark:text-slate-400">Active filters:</span>
               {selectedCategory !== 'all' && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 text-rose-700 font-semibold border border-rose-200">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-semibold border border-rose-200 dark:border-rose-800">
                   <span>Category: {activeCategoryObj?.name}</span>
-                  <button onClick={() => setSelectedCategory('all')} className="hover:text-rose-900 cursor-pointer">
+                  <button onClick={() => setSelectedCategory('all')} className="hover:text-rose-900 dark:hover:text-rose-100 cursor-pointer">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </span>
               )}
               {searchKeyword && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-800 font-semibold border border-slate-200">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold border border-slate-200 dark:border-slate-700">
                   <span>Search: "{searchKeyword}"</span>
-                  <button onClick={() => setSearchKeyword('')} className="hover:text-slate-900 cursor-pointer">
+                  <button onClick={() => setSearchKeyword('')} className="hover:text-slate-900 dark:hover:text-white cursor-pointer">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </span>
@@ -186,12 +186,12 @@ const MainShop: React.FC = () => {
 
           {/* Products Grid */}
           {filteredProducts.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
-              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto">
+            <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+              <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mx-auto">
                 <ShoppingBag className="w-8 h-8" />
               </div>
-              <h3 className="text-lg font-bold text-slate-800">No Products Found</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white">No Products Found</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                 We couldn't find any products matching your search criteria. Try different keywords or reset your category filter.
               </p>
               <button
@@ -200,7 +200,7 @@ const MainShop: React.FC = () => {
                   setSearchKeyword('');
                   setOnlyInStock(false);
                 }}
-                className="mt-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-rose-600 text-white font-bold text-xs transition-colors shadow-xs"
+                className="mt-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-colors shadow-xs"
               >
                 Show All Items
               </button>
@@ -214,16 +214,16 @@ const MainShop: React.FC = () => {
           )}
 
           {/* Mid-Page Promotional Banner */}
-          <div className="p-6 sm:p-10 rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-rose-950 text-white border border-slate-800 shadow-xl relative overflow-hidden">
-            <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-rose-600/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="p-6 sm:p-10 rounded-3xl bg-gradient-to-r from-rose-50/90 via-white to-amber-50/80 dark:bg-gradient-to-r dark:from-slate-950 dark:via-slate-900 dark:to-rose-950 text-slate-900 dark:text-white border border-rose-200/80 dark:border-slate-800 shadow-md relative overflow-hidden">
+            <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-rose-500/10 dark:bg-rose-600/20 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10 max-w-2xl space-y-3">
-              <span className="px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 font-bold text-xs uppercase tracking-wider border border-rose-500/30 inline-flex items-center gap-1.5">
+              <span className="px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold text-xs uppercase tracking-wider border border-rose-200 dark:border-rose-500/30 inline-flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5" /> Nationwide Free Delivery
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black font-serif">
+              <h3 className="text-2xl sm:text-3xl font-black font-serif text-slate-900 dark:text-white">
                 Shop over ৳{settings.freeDeliveryThreshold.toLocaleString()} for Free Shipping all across Bangladesh
               </h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                 Whether you are in Dhaka, Chittagong, Sylhet, Rajshahi, or any other district, enjoy zero delivery charge on qualifying baskets with 100% genuine product guarantee and verified bKash/Nagad transactions.
               </p>
               <div className="pt-2 flex items-center gap-3">
@@ -233,8 +233,8 @@ const MainShop: React.FC = () => {
                 >
                   View Your Cart
                 </button>
-                <span className="text-xs text-slate-400 font-mono">
-                  Coupon: <strong className="text-amber-300">BREDVEX10</strong>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                  Coupon: <strong className="text-rose-600 dark:text-amber-300 font-bold">BREDVEX10</strong>
                 </span>
               </div>
             </div>
