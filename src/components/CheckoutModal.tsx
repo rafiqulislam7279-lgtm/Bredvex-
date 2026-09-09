@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   ShieldCheck, 
@@ -12,6 +12,7 @@ import {
 import { useStore } from '../context/StoreContext';
 import { BANGLADESH_DISTRICTS } from '../data/initialData';
 import { CustomerInfo, PaymentMethod } from '../types';
+import { GoogleAuthButton } from './GoogleAuthButton';
 
 export const CheckoutModal: React.FC = () => {
   const {
@@ -26,7 +27,8 @@ export const CheckoutModal: React.FC = () => {
     deliveryZone,
     setDeliveryZone,
     settings,
-    checkout
+    checkout,
+    currentUser
   } = useStore();
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -37,6 +39,18 @@ export const CheckoutModal: React.FC = () => {
   const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
+  
+  // Auto-prefill if Google user is logged in
+  useEffect(() => {
+    if (currentUser) {
+      if (!name && currentUser.displayName) {
+        setName(currentUser.displayName);
+      }
+      if (!email && currentUser.email) {
+        setEmail(currentUser.email);
+      }
+    }
+  }, [currentUser]);
   
   // Payment states
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bkash');
@@ -180,6 +194,9 @@ export const CheckoutModal: React.FC = () => {
           {step === 1 && (
             <form id="form-checkout-step1" onSubmit={handleNextStep} className="space-y-4">
               
+              {/* Optional Google Sign-In Card */}
+              <GoogleAuthButton variant="checkout" />
+
               {/* Delivery Zone Toggle */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">

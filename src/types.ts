@@ -70,6 +70,7 @@ export interface Order {
   courierStatus?: string;
   courierTrackingUrl?: string;
   courierBookedAt?: string;
+  userId?: string;
   createdAt: string;
   updatedAt: string;
 }

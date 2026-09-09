@@ -3,6 +3,24 @@ import { Product, CartItem, Order, SiteSettings, CustomerInfo, PaymentMethod, Pr
 import { INITIAL_PRODUCTS, INITIAL_SETTINGS, INITIAL_ORDERS, INITIAL_REVIEWS, INITIAL_COUPONS } from '../data/initialData';
 import { dispatchOrder, DispatchResult } from '../services/courierService';
 import { sendSmsNotification, generateOrderSmsText, generateCourierSmsText } from '../services/smsService';
+import { 
+  db, 
+  auth, 
+  signInWithGoogle, 
+  signOutUser, 
+  testConnection, 
+  handleFirestoreError, 
+  OperationType 
+} from '../services/firebase';
+import { 
+  collection, 
+  doc, 
+  onSnapshot, 
+  setDoc, 
+  deleteDoc, 
+  getDocs 
+} from 'firebase/firestore';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 export const MASTER_LOGIN_ID = 'aditto13552b';
 export const MASTER_LOGIN_PASSWORD = 'aditto13552b';
@@ -32,6 +50,14 @@ interface StoreContextType {
   appliedCouponData: Coupon | null;
   discountPercentage: number;
   deliveryZone: 'inside_dhaka' | 'outside_dhaka';
+
+  // Google Auth & Cloud Sync
+  currentUser: User | null;
+  isAuthLoading: boolean;
+  cloudSyncStatus: 'synced' | 'syncing' | 'error' | 'offline';
+  loginWithGoogle: () => Promise<User | null>;
+  logoutGoogle: () => Promise<void>;
+  forceCloudSync: () => Promise<void>;
   
   // Actions
   setActiveView: (view: 'shop' | 'admin') => void;
@@ -276,6 +302,167 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return INITIAL_COUPONS;
   });
 
+  // Google Auth & Cloud Sync States
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('syncing');
+
+  // Listen to Auth State
+  useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setIsAuthLoading(false);
+      // Auto master admin grant if user logs in with the project owner email rafiqulislam7279@gmail.com
+      if (user && user.email?.toLowerCase() === 'rafiqulislam7279@gmail.com') {
+        setIsAdminAuthenticated(true);
+        setAdminRole('master');
+        const masterObj: AdminUser = { id: user.uid, name: user.displayName || 'Owner Rafiqul', role: 'master' };
+        setAdminUser(masterObj);
+        try {
+          localStorage.setItem('bredvex_admin_auth', 'true');
+          localStorage.setItem('bredvex_admin_role', 'master');
+          localStorage.setItem('bredvex_admin_user', JSON.stringify(masterObj));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    });
+    return () => unsubAuth();
+  }, []);
+
+  // Connection test on mount
+  useEffect(() => {
+    testConnection();
+  }, []);
+
+  // Real-time Firestore Sync for Products (Across all devices)
+  useEffect(() => {
+    let isSeeding = false;
+    const unsubProducts = onSnapshot(collection(db, 'products'), async (snapshot) => {
+      if (snapshot.empty && !isSeeding) {
+        isSeeding = true;
+        setCloudSyncStatus('syncing');
+        for (const p of INITIAL_PRODUCTS) {
+          try {
+            await setDoc(doc(db, 'products', p.id), p);
+          } catch (e) {
+            console.error('Seed product error:', e);
+          }
+        }
+        setProducts(INITIAL_PRODUCTS);
+        setCloudSyncStatus('synced');
+      } else if (!snapshot.empty) {
+        const remoteProducts: Product[] = [];
+        snapshot.forEach((docSnap) => {
+          remoteProducts.push(docSnap.data() as Product);
+        });
+        remoteProducts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        setProducts(remoteProducts);
+        setCloudSyncStatus('synced');
+        try {
+          localStorage.setItem('bredvex_products', JSON.stringify(remoteProducts));
+        } catch {}
+      }
+    }, (error) => {
+      console.warn('Firestore products listener error:', error);
+      setCloudSyncStatus('error');
+    });
+
+    return () => unsubProducts();
+  }, []);
+
+  // Real-time Firestore Sync for Orders
+  useEffect(() => {
+    const unsubOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
+      if (!snapshot.empty) {
+        const remoteOrders: Order[] = [];
+        snapshot.forEach((docSnap) => {
+          remoteOrders.push(docSnap.data() as Order);
+        });
+        remoteOrders.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        setOrders(remoteOrders);
+        try {
+          localStorage.setItem('bredvex_orders', JSON.stringify(remoteOrders));
+        } catch {}
+      }
+    }, (error) => {
+      console.warn('Firestore orders listener error:', error);
+    });
+
+    return () => unsubOrders();
+  }, []);
+
+  // Real-time Firestore Sync for Settings
+  useEffect(() => {
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'store_config'), (snapshot) => {
+      if (snapshot.exists()) {
+        const remote = snapshot.data() as SiteSettings;
+        setSettings(prev => ({ ...prev, ...remote }));
+        try {
+          localStorage.setItem('bredvex_settings', JSON.stringify({ ...INITIAL_SETTINGS, ...remote }));
+        } catch {}
+      }
+    }, (error) => {
+      console.warn('Firestore settings listener error:', error);
+    });
+
+    return () => unsubSettings();
+  }, []);
+
+  // Real-time Firestore Sync for Coupons
+  useEffect(() => {
+    let isSeedingCoupons = false;
+    const unsubCoupons = onSnapshot(collection(db, 'coupons'), async (snapshot) => {
+      if (snapshot.empty && !isSeedingCoupons) {
+        isSeedingCoupons = true;
+        for (const c of INITIAL_COUPONS) {
+          try {
+            await setDoc(doc(db, 'coupons', c.id), c);
+          } catch {}
+        }
+        setCoupons(INITIAL_COUPONS);
+      } else if (!snapshot.empty) {
+        const remoteCoupons: Coupon[] = [];
+        snapshot.forEach((d) => remoteCoupons.push(d.data() as Coupon));
+        setCoupons(remoteCoupons);
+        try {
+          localStorage.setItem('bredvex_coupons', JSON.stringify(remoteCoupons));
+        } catch {}
+      }
+    }, (error) => {
+      console.warn('Firestore coupons listener error:', error);
+    });
+
+    return () => unsubCoupons();
+  }, []);
+
+  // Real-time Firestore Sync for Reviews
+  useEffect(() => {
+    let isSeedingReviews = false;
+    const unsubReviews = onSnapshot(collection(db, 'reviews'), async (snapshot) => {
+      if (snapshot.empty && !isSeedingReviews) {
+        isSeedingReviews = true;
+        for (const r of INITIAL_REVIEWS) {
+          try {
+            await setDoc(doc(db, 'reviews', r.id), r);
+          } catch {}
+        }
+        setReviews(INITIAL_REVIEWS);
+      } else if (!snapshot.empty) {
+        const remoteReviews: ProductReview[] = [];
+        snapshot.forEach((d) => remoteReviews.push(d.data() as ProductReview));
+        setReviews(remoteReviews);
+        try {
+          localStorage.setItem('bredvex_reviews', JSON.stringify(remoteReviews));
+        } catch {}
+      }
+    }, (error) => {
+      console.warn('Firestore reviews listener error:', error);
+    });
+
+    return () => unsubReviews();
+  }, []);
+
   // Persistence effects
   useEffect(() => {
     try {
@@ -480,7 +667,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return `${cleanPrefix}-${randomChars}${randomNum}`;
   };
 
-  const addCoupon = (newCouponData: Omit<Coupon, 'id' | 'createdAt' | 'timesUsed'>) => {
+  const addCoupon = async (newCouponData: Omit<Coupon, 'id' | 'createdAt' | 'timesUsed'>) => {
     const newCoupon: Coupon = {
       ...newCouponData,
       id: `cpn-${Date.now()}`,
@@ -489,9 +676,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString(),
     };
     setCoupons(prev => [newCoupon, ...prev]);
+    try {
+      await setDoc(doc(db, 'coupons', newCoupon.id), newCoupon);
+    } catch (e) {
+      console.warn('Error saving coupon to Firestore:', e);
+    }
   };
 
-  const updateCoupon = (id: string, updatedData: Partial<Coupon>) => {
+  const updateCoupon = async (id: string, updatedData: Partial<Coupon>) => {
     setCoupons(prev =>
       prev.map(c => {
         if (c.id === id) {
@@ -504,21 +696,38 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return c;
       })
     );
+    try {
+      await setDoc(doc(db, 'coupons', id), updatedData, { merge: true });
+    } catch (e) {
+      console.warn('Error updating coupon in Firestore:', e);
+    }
   };
 
-  const deleteCoupon = (id: string) => {
+  const deleteCoupon = async (id: string) => {
     const target = coupons.find(c => c.id === id);
     if (target && appliedCoupon && target.code.toUpperCase() === appliedCoupon.toUpperCase()) {
       setAppliedCoupon(null);
       setDiscountPercentage(0);
     }
     setCoupons(prev => prev.filter(c => c.id !== id));
+    try {
+      await deleteDoc(doc(db, 'coupons', id));
+    } catch (e) {
+      console.warn('Error deleting coupon from Firestore:', e);
+    }
   };
 
-  const toggleCouponStatus = (id: string) => {
+  const toggleCouponStatus = async (id: string) => {
+    const target = coupons.find(c => c.id === id);
+    const newStatus = target ? !target.isActive : true;
     setCoupons(prev =>
       prev.map(c => (c.id === id ? { ...c, isActive: !c.isActive } : c))
     );
+    try {
+      await setDoc(doc(db, 'coupons', id), { isActive: newStatus }, { merge: true });
+    } catch (e) {
+      console.warn('Error toggling coupon status in Firestore:', e);
+    }
   };
 
   const applyCoupon = (code: string) => {
@@ -616,6 +825,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       updatedAt: new Date().toISOString(),
     };
 
+    if (currentUser?.uid) {
+      newOrder.userId = currentUser.uid;
+      if (!newOrder.customerInfo.email && currentUser.email) {
+        newOrder.customerInfo.email = currentUser.email;
+      }
+    }
+
     // Check if Courier Auto-Book is enabled
     if (settings.courierSettings?.autoBookOnOrder) {
       try {
@@ -644,14 +860,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
 
-    // Reduce stock of products
+    // Reduce stock of products locally and in Firestore
     setProducts(prev =>
       prev.map(prod => {
         const boughtItem = cart.find(ci => ci.product.id === prod.id);
         if (boughtItem) {
+          const nextStock = Math.max(0, prod.stock - boughtItem.quantity);
+          setDoc(doc(db, 'products', prod.id), { stock: nextStock }, { merge: true }).catch(console.error);
           return {
             ...prod,
-            stock: Math.max(0, prod.stock - boughtItem.quantity),
+            stock: nextStock,
           };
         }
         return prod;
@@ -661,31 +879,54 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Increment coupon usage if used
     if (appliedCoupon) {
       setCoupons(prev =>
-        prev.map(c =>
-          c.code.toUpperCase() === appliedCoupon.toUpperCase()
-            ? { ...c, timesUsed: (c.timesUsed || 0) + 1 }
-            : c
-        )
+        prev.map(c => {
+          if (c.code.toUpperCase() === appliedCoupon.toUpperCase()) {
+            const nextUsed = (c.timesUsed || 0) + 1;
+            setDoc(doc(db, 'coupons', c.id), { timesUsed: nextUsed }, { merge: true }).catch(console.error);
+            return { ...c, timesUsed: nextUsed };
+          }
+          return c;
+        })
       );
     }
 
     setOrders(prev => [newOrder, ...prev]);
+
+    // Save order directly to Firestore
+    try {
+      await setDoc(doc(db, 'orders', newOrder.id), newOrder);
+    } catch (err) {
+      console.error('Failed to save order to Firestore:', err);
+    }
+
     clearCart();
     setOrderSuccessData(newOrder);
     setIsCheckoutOpen(false);
     return newOrder;
   };
 
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
+  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+    const now = new Date().toISOString();
     setOrders(prev =>
-      prev.map(ord => (ord.id === orderId ? { ...ord, status, updatedAt: new Date().toISOString() } : ord))
+      prev.map(ord => (ord.id === orderId ? { ...ord, status, updatedAt: now } : ord))
     );
+    try {
+      await setDoc(doc(db, 'orders', orderId), { status, updatedAt: now }, { merge: true });
+    } catch (e) {
+      console.warn('Error updating order status in Firestore:', e);
+    }
   };
 
-  const updateOrderPaymentStatus = (orderId: string, paymentStatus: Order['paymentStatus']) => {
+  const updateOrderPaymentStatus = async (orderId: string, paymentStatus: Order['paymentStatus']) => {
+    const now = new Date().toISOString();
     setOrders(prev =>
-      prev.map(ord => (ord.id === orderId ? { ...ord, paymentStatus, updatedAt: new Date().toISOString() } : ord))
+      prev.map(ord => (ord.id === orderId ? { ...ord, paymentStatus, updatedAt: now } : ord))
     );
+    try {
+      await setDoc(doc(db, 'orders', orderId), { paymentStatus, updatedAt: now }, { merge: true });
+    } catch (e) {
+      console.warn('Error updating order payment status in Firestore:', e);
+    }
   };
 
   const dispatchOrderToCourier = async (
@@ -759,7 +1000,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   };
 
-  const addReview = (reviewData: Omit<ProductReview, 'id' | 'createdAt'>) => {
+  const addReview = async (reviewData: Omit<ProductReview, 'id' | 'createdAt'>) => {
     const newRev: ProductReview = {
       ...reviewData,
       id: `rev-${Date.now()}`,
@@ -767,25 +1008,47 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setReviews(prev => [newRev, ...prev]);
 
+    try {
+      await setDoc(doc(db, 'reviews', newRev.id), newRev);
+    } catch (e) {
+      console.warn('Error saving review to Firestore:', e);
+    }
+
     // Recalculate average rating & reviewsCount for that product
+    const productReviews = [newRev, ...reviews.filter(r => r.productId === reviewData.productId)];
+    const avg = Number((productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length).toFixed(1));
+    const nextReviewsCount = productReviews.length;
+
     setProducts(prev =>
       prev.map(p => {
         if (p.id === reviewData.productId) {
-          const productReviews = [newRev, ...reviews.filter(r => r.productId === p.id)];
-          const avg = Number((productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length).toFixed(1));
           return {
             ...p,
             rating: avg,
-            reviewsCount: productReviews.length
+            reviewsCount: nextReviewsCount
           };
         }
         return p;
       })
     );
+
+    try {
+      await setDoc(doc(db, 'products', reviewData.productId), {
+        rating: avg,
+        reviewsCount: nextReviewsCount
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Error updating product rating in Firestore:', e);
+    }
   };
 
-  const deleteReview = (reviewId: string) => {
+  const deleteReview = async (reviewId: string) => {
     setReviews(prev => prev.filter(r => r.id !== reviewId));
+    try {
+      await deleteDoc(doc(db, 'reviews', reviewId));
+    } catch (e) {
+      console.warn('Error deleting review from Firestore:', e);
+    }
   };
 
   // Admin Auth
@@ -890,27 +1153,54 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  // Admin Product Operations
-  const addProduct = (prodData: Omit<Product, 'id' | 'createdAt'>) => {
+  // Admin Product Operations - Real-time Multi-Device Firestore Persistence
+  const addProduct = async (prodData: Omit<Product, 'id' | 'createdAt'>) => {
     const newProduct: Product = {
       ...prodData,
       id: `bvx-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
+    // Optimistic local state update for instant UI feedback
     setProducts(prev => [newProduct, ...prev]);
+
+    // Save to Firestore so every device instantly receives it
+    try {
+      await setDoc(doc(db, 'products', newProduct.id), newProduct);
+    } catch (err) {
+      console.error('Error saving product to Firestore:', err);
+      handleFirestoreError(err, OperationType.CREATE, `products/${newProduct.id}`);
+    }
   };
 
-  const updateProduct = (id: string, updatedData: Partial<Product>) => {
+  const updateProduct = async (id: string, updatedData: Partial<Product>) => {
+    // Optimistic local state update
     setProducts(prev =>
       prev.map(prod => (prod.id === id ? { ...prod, ...updatedData } : prod))
     );
+
+    // Save update to Firestore
+    try {
+      await setDoc(doc(db, 'products', id), updatedData, { merge: true });
+    } catch (err) {
+      console.error('Error updating product in Firestore:', err);
+      handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
+    }
   };
 
-  const deleteProduct = (id: string) => {
+  const deleteProduct = async (id: string) => {
+    // Optimistic local state update
     setProducts(prev => prev.filter(prod => prod.id !== id));
+
+    // Delete from Firestore
+    try {
+      await deleteDoc(doc(db, 'products', id));
+    } catch (err) {
+      console.error('Error deleting product from Firestore:', err);
+      handleFirestoreError(err, OperationType.DELETE, `products/${id}`);
+    }
   };
 
-  const updateSettings = (newSettings: Partial<SiteSettings>) => {
+  const updateSettings = async (newSettings: Partial<SiteSettings>) => {
     // Permission check: Staff users cannot customize website branding or settings
     if (adminRole === 'staff') {
       console.warn('Unauthorized: Staff members cannot customize website settings.');
@@ -918,9 +1208,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
     setSettings(prev => ({ ...prev, ...newSettings }));
+    try {
+      await setDoc(doc(db, 'settings', 'store_config'), newSettings, { merge: true });
+    } catch (err) {
+      console.error('Error updating store settings in Firestore:', err);
+    }
   };
 
-  const resetToDefaults = () => {
+  const resetToDefaults = async () => {
     if (adminRole === 'staff') {
       alert('Access Restricted: Only Master Admins can reset the store to defaults.');
       return;
@@ -931,6 +1226,67 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.removeItem('bredvex_products');
     localStorage.removeItem('bredvex_settings');
     localStorage.removeItem('bredvex_orders');
+
+    try {
+      for (const p of INITIAL_PRODUCTS) {
+        await setDoc(doc(db, 'products', p.id), p);
+      }
+      await setDoc(doc(db, 'settings', 'store_config'), INITIAL_SETTINGS);
+    } catch (e) {
+      console.error('Error resetting Firestore to defaults:', e);
+    }
+  };
+
+  // Google Authentication methods (Optional for users)
+  const loginWithGoogle = async (): Promise<User | null> => {
+    try {
+      const user = await signInWithGoogle();
+      if (user) {
+        setCurrentUser(user);
+        try {
+          await setDoc(doc(db, 'users', user.uid), {
+            id: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            lastLoginAt: new Date().toISOString()
+          }, { merge: true });
+        } catch (e) {
+          console.warn('Error saving user profile doc:', e);
+        }
+      }
+      return user;
+    } catch (err) {
+      console.error('Google Sign-in failed:', err);
+      throw err;
+    }
+  };
+
+  const logoutGoogle = async (): Promise<void> => {
+    try {
+      await signOutUser();
+      setCurrentUser(null);
+    } catch (err) {
+      console.error('Google Sign-out failed:', err);
+      throw err;
+    }
+  };
+
+  const forceCloudSync = async (): Promise<void> => {
+    setCloudSyncStatus('syncing');
+    try {
+      const pSnap = await getDocs(collection(db, 'products'));
+      if (!pSnap.empty) {
+        const remoteProducts: Product[] = [];
+        pSnap.forEach((d) => remoteProducts.push(d.data() as Product));
+        remoteProducts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        setProducts(remoteProducts);
+      }
+      setCloudSyncStatus('synced');
+    } catch (e) {
+      console.error('Force cloud sync error:', e);
+      setCloudSyncStatus('error');
+    }
   };
 
   return (
@@ -945,6 +1301,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isAdminAuthenticated,
         adminRole,
         adminUser,
+        currentUser,
+        isAuthLoading,
+        cloudSyncStatus,
+        loginWithGoogle,
+        logoutGoogle,
+        forceCloudSync,
         theme,
         toggleTheme,
         setTheme,

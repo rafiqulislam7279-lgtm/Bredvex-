@@ -12,6 +12,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
+import { GoogleAuthButton } from './GoogleAuthButton';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
@@ -165,6 +166,27 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
             <span>{loginError}</span>
           </div>
         )}
+
+        {/* Quick Google Sign In for Admin */}
+        <div className="space-y-3">
+          <GoogleAuthButton 
+            variant="admin" 
+            onSuccess={() => {
+              setLoginSuccessMsg('Authenticated with Google!');
+              setTimeout(() => {
+                onClose();
+                setActiveView('admin');
+              }, 400);
+            }} 
+          />
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              Or use ID & Password
+            </span>
+            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+          </div>
+        </div>
 
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4">

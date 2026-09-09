@@ -1,0 +1,164 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A purchasable product in the store catalog",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique product identifier" },
+        "name": { "type": "string", "description": "Product English title" },
+        "banglaName": { "type": "string", "description": "Product Bengali title" },
+        "slug": { "type": "string", "description": "URL slug" },
+        "price": { "type": "number", "description": "Current selling price in BDT" },
+        "originalPrice": { "type": "number", "description": "Regular or strike-through price in BDT" },
+        "rating": { "type": "number", "description": "Average user rating 1-5" },
+        "reviewsCount": { "type": "number", "description": "Total number of reviews" },
+        "category": { "type": "string", "description": "Category identifier" },
+        "description": { "type": "string", "description": "Full product description" },
+        "features": { "type": "array", "description": "Key bullet points" },
+        "images": { "type": "array", "description": "Image URLs" },
+        "stock": { "type": "number", "description": "Available stock quantity" },
+        "isFeatured": { "type": "boolean", "description": "Featured in hero/showcase" },
+        "isTrending": { "type": "boolean", "description": "Trending badge" },
+        "colors": { "type": "array", "description": "Available color variants" },
+        "sizes": { "type": "array", "description": "Available size variants" },
+        "tags": { "type": "array", "description": "Search tags" },
+        "createdAt": { "type": "string", "description": "Creation ISO date" }
+      },
+      "required": ["id", "name", "price", "category", "images"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order placed in the store",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Order ID" },
+        "orderNumber": { "type": "string", "description": "Human readable order number e.g. BRED-1029" },
+        "items": { "type": "array", "description": "Array of cart items" },
+        "subtotal": { "type": "number", "description": "Items subtotal in BDT" },
+        "shippingCost": { "type": "number", "description": "Delivery charge in BDT" },
+        "discountAmount": { "type": "number", "description": "Coupon or promotional discount" },
+        "couponCode": { "type": "string", "description": "Applied promo code" },
+        "grandTotal": { "type": "number", "description": "Final total payable in BDT" },
+        "customerInfo": { "type": "object", "description": "Delivery address and recipient details" },
+        "paymentMethod": { "type": "string", "description": "bkash, nagad, rocket, cod, or card" },
+        "paymentStatus": { "type": "string", "description": "pending, verified, paid, failed" },
+        "transactionId": { "type": "string", "description": "MFS transaction ID" },
+        "paymentSenderNumber": { "type": "string", "description": "Sender phone number for MFS" },
+        "status": { "type": "string", "description": "pending, processing, shipped, delivered, cancelled" },
+        "trackingCourier": { "type": "string", "description": "Steadfast or Pathao" },
+        "trackingNumber": { "type": "string", "description": "Courier consignment tracking number" },
+        "consignmentId": { "type": "string", "description": "Courier internal ID" },
+        "courierStatus": { "type": "string", "description": "Status reported by courier" },
+        "courierTrackingUrl": { "type": "string", "description": "Public parcel tracking URL" },
+        "courierBookedAt": { "type": "string", "description": "Timestamp when booked with courier" },
+        "userId": { "type": "string", "description": "Optional authenticated customer user ID" },
+        "createdAt": { "type": "string", "description": "Order placement timestamp" },
+        "updatedAt": { "type": "string", "description": "Last update timestamp" }
+      },
+      "required": ["id", "orderNumber", "items", "grandTotal", "customerInfo", "paymentMethod", "status"]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "Discount coupon code",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Coupon ID" },
+        "code": { "type": "string", "description": "Unique coupon uppercase code" },
+        "discountType": { "type": "string", "description": "percentage or fixed" },
+        "discountValue": { "type": "number", "description": "Discount amount or percentage" },
+        "minOrderAmount": { "type": "number", "description": "Minimum subtotal required" },
+        "maxDiscountAmount": { "type": "number", "description": "Cap on discount in BDT" },
+        "expiresAt": { "type": "string", "description": "Expiration date" },
+        "usageLimit": { "type": "number", "description": "Total times coupon can be used" },
+        "timesUsed": { "type": "number", "description": "Current times used" },
+        "isActive": { "type": "boolean", "description": "Whether coupon is active" },
+        "description": { "type": "string", "description": "Coupon description" },
+        "createdAt": { "type": "string", "description": "Creation date" }
+      },
+      "required": ["id", "code", "discountType", "discountValue", "isActive"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Store configuration, MFS numbers, and courier credentials",
+      "type": "object",
+      "properties": {
+        "siteName": { "type": "string", "description": "Store branding name" },
+        "tagline": { "type": "string", "description": "Store tagline" },
+        "logoUrl": { "type": "string", "description": "Store logo" },
+        "contactPhone": { "type": "string", "description": "Customer support hotline" },
+        "contactEmail": { "type": "string", "description": "Customer support email" },
+        "address": { "type": "string", "description": "Physical store address" },
+        "announcementText": { "type": "string", "description": "Top banner text" },
+        "showAnnouncement": { "type": "boolean", "description": "Toggle top banner" },
+        "bkashNumber": { "type": "string", "description": "bKash receiving phone number" },
+        "bkashType": { "type": "string", "description": "Merchant or Personal" },
+        "nagadNumber": { "type": "string", "description": "Nagad receiving phone number" },
+        "nagadType": { "type": "string", "description": "Merchant or Personal" },
+        "rocketNumber": { "type": "string", "description": "Rocket receiving phone number" },
+        "rocketType": { "type": "string", "description": "Merchant or Personal" },
+        "insideDhakaDeliveryFee": { "type": "number", "description": "Shipping fee inside Dhaka" },
+        "outsideDhakaDeliveryFee": { "type": "number", "description": "Shipping fee outside Dhaka" },
+        "freeDeliveryThreshold": { "type": "number", "description": "Cart threshold for free delivery" }
+      }
+    },
+    "ProductReview": {
+      "title": "ProductReview",
+      "description": "Product review submitted by buyer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Review ID" },
+        "productId": { "type": "string", "description": "Target product ID" },
+        "userName": { "type": "string", "description": "Customer name" },
+        "userLocation": { "type": "string", "description": "Customer location" },
+        "rating": { "type": "number", "description": "Rating score 1 to 5" },
+        "comment": { "type": "string", "description": "Review text" },
+        "createdAt": { "type": "string", "description": "Submission date" },
+        "verifiedBuyer": { "type": "boolean", "description": "Verified purchase flag" }
+      },
+      "required": ["id", "productId", "userName", "rating", "comment"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Optional customer user profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "description": "Customer email" },
+        "displayName": { "type": "string", "description": "Customer display name" },
+        "photoURL": { "type": "string", "description": "Google avatar URL" },
+        "phone": { "type": "string", "description": "Default contact phone" },
+        "address": { "type": "string", "description": "Saved shipping address" },
+        "city": { "type": "string", "description": "City" },
+        "createdAt": { "type": "string", "description": "Account registration date" }
+      },
+      "required": ["id"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Global store products catalog accessible by all shoppers across all devices"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Store customer orders and courier dispatches"
+    },
+    "/coupons/{couponId}": {
+      "schema": "Coupon",
+      "description": "Promotional discount codes"
+    },
+    "/settings/{settingId}": {
+      "schema": "SiteSettings",
+      "description": "Global store configuration"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "ProductReview",
+      "description": "Customer reviews and product feedback"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Optional customer accounts and saved addresses"
+    }
+  }
+}

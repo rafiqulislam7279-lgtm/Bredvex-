@@ -16,11 +16,16 @@ import { useStore } from '../context/StoreContext';
 import { Order } from '../types';
 
 export const TrackOrderModal: React.FC = () => {
-  const { isTrackOrderOpen, setIsTrackOrderOpen, orders } = useStore();
+  const { isTrackOrderOpen, setIsTrackOrderOpen, orders, currentUser } = useStore();
   const [searchInput, setSearchInput] = useState('');
   const [searchedOrder, setSearchedOrder] = useState<Order | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [copiedTracking, setCopiedTracking] = useState(false);
+
+  // Orders linked to the signed-in Google user
+  const userOrders = currentUser 
+    ? orders.filter(o => o.userId === currentUser.uid || (currentUser.email && o.customerInfo.email?.toLowerCase() === currentUser.email.toLowerCase())) 
+    : [];
 
   if (!isTrackOrderOpen) return null;
 
@@ -109,6 +114,35 @@ export const TrackOrderModal: React.FC = () => {
                 Track
               </button>
             </div>
+
+            {/* Signed-in User Orders */}
+            {userOrders.length > 0 && (
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-xl space-y-1.5">
+                <p className="text-[11px] font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Orders linked to your Google account ({currentUser?.email}):</span>
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {userOrders.map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => {
+                        setSearchInput(o.orderNumber);
+                        setSearchedOrder(o);
+                        setHasSearched(true);
+                      }}
+                      className="px-2.5 py-1 bg-white dark:bg-emerald-900/60 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>#{o.orderNumber}</span>
+                      <span className="text-[10px] font-normal px-1 py-0.2 bg-emerald-100 dark:bg-emerald-800 rounded">
+                        ৳{o.grandTotal.toLocaleString()}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Quick Demo Order Chips */}
             <div className="flex items-center gap-2 text-xs text-slate-500 pt-1">

@@ -49,6 +49,7 @@ import { InvoiceModal } from './InvoiceModal';
 import { SendSmsModal } from './SendSmsModal';
 import { AdminCoupons } from './AdminCoupons';
 import { ThemeToggle } from './ThemeToggle';
+import { GoogleAuthButton } from './GoogleAuthButton';
 
 export const AdminPanel: React.FC = () => {
   const {
@@ -72,7 +73,10 @@ export const AdminPanel: React.FC = () => {
     resetToDefaults,
     reviews,
     deleteReview,
-    coupons
+    coupons,
+    currentUser,
+    cloudSyncStatus,
+    forceCloudSync
   } = useStore();
 
   // Login form states
@@ -571,6 +575,18 @@ export const AdminPanel: React.FC = () => {
             </div>
           )}
 
+          {/* Google Sign In for Admin */}
+          <div className="space-y-3">
+            <GoogleAuthButton variant="admin" />
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+              <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Or enter credentials
+              </span>
+              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+            </div>
+          </div>
+
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
@@ -669,6 +685,20 @@ export const AdminPanel: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Real-time Cloud Sync Status Indicator */}
+            <button
+              type="button"
+              onClick={forceCloudSync}
+              title="Firebase Firestore Cloud Sync is active. Click to refresh."
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/90 border border-slate-700/80 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors cursor-pointer"
+            >
+              <span className={`w-2 h-2 rounded-full ${cloudSyncStatus === 'syncing' ? 'bg-amber-400 animate-pulse' : cloudSyncStatus === 'error' ? 'bg-rose-500' : 'bg-emerald-400'}`} />
+              <span className="hidden sm:inline font-semibold">
+                {cloudSyncStatus === 'syncing' ? 'Syncing...' : 'Cloud Synced'}
+              </span>
+              <RefreshCw className={`w-3 h-3 text-slate-400 ${cloudSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+            </button>
+
             {/* Dark / Light Mode Toggle */}
             <ThemeToggle size="md" />
 
@@ -993,6 +1023,27 @@ export const AdminPanel: React.FC = () => {
         {/* ===================== TAB 2: PRODUCTS ===================== */}
         {adminTab === 'products' && (
           <div className="space-y-5">
+            {/* Real-time Cloud Sync Banner */}
+            <div className="flex items-center justify-between gap-3 px-4 py-3 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl text-xs text-emerald-900 dark:text-emerald-200">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span className="font-semibold">
+                  Multi-Device Cloud Sync Active:
+                </span>
+                <span className="text-emerald-700 dark:text-emerald-300 hidden md:inline">
+                  Every product you add, edit, or delete automatically updates in real-time across all customer devices and browsers.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={forceCloudSync}
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-800 text-[11px] font-bold rounded-lg border border-emerald-300 dark:border-emerald-700 shadow-2xs transition-colors shrink-0 cursor-pointer"
+              >
+                <RefreshCw className={`w-3 h-3 ${cloudSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+                <span>{cloudSyncStatus === 'syncing' ? 'Syncing...' : 'Sync Cloud Now'}</span>
+              </button>
+            </div>
+
             {/* Action & Search Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
               <div className="relative flex-1 min-w-[240px]">
@@ -3355,21 +3406,27 @@ export const AdminPanel: React.FC = () => {
               </div>
 
               {/* Modal Buttons */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsProductModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  id="btn-save-product-modal"
-                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-md cursor-pointer"
-                >
-                  {editingProduct ? 'Update Product' : 'Add to Store'}
-                </button>
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span>Syncs live to all devices via Firestore</span>
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsProductModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    id="btn-save-product-modal"
+                    className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-md cursor-pointer"
+                  >
+                    {editingProduct ? 'Update Product' : 'Add to Store'}
+                  </button>
+                </div>
               </div>
 
             </form>

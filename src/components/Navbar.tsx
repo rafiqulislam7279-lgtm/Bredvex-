@@ -14,6 +14,7 @@ import {
 import { useStore } from '../context/StoreContext';
 import { INITIAL_CATEGORIES } from '../data/initialData';
 import { ThemeToggle } from './ThemeToggle';
+import { GoogleAuthButton } from './GoogleAuthButton';
 
 export const Navbar: React.FC = () => {
   const {
@@ -168,6 +169,9 @@ export const Navbar: React.FC = () => {
               <span>Track Order</span>
             </button>
 
+            {/* Google Account / Sign-In Button (Desktop - Optional) */}
+            <GoogleAuthButton variant="navbar" />
+
             {/* Mobile Search Toggle */}
             <button
               id="btn-mobile-search-toggle"
@@ -292,6 +296,9 @@ export const Navbar: React.FC = () => {
       {mobileMenuOpen && (
         <div className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-4 space-y-3 shadow-lg text-slate-900 dark:text-slate-100">
           
+          {/* Mobile Google Account Button */}
+          <GoogleAuthButton variant="mobile" />
+
           {/* Mobile Theme Toggle */}
           <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Theme Mode:</span>
