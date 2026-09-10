@@ -18,6 +18,7 @@ export interface Product {
   sizes?: string[];
   tags?: string[];
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Category {

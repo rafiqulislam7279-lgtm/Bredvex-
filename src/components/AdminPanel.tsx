@@ -125,6 +125,10 @@ export const AdminPanel: React.FC = () => {
   // Product modal (Add / Edit) states
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [productActionToast, setProductActionToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [productModalError, setProductModalError] = useState('');
   
   // Product Form Fields
   const [pName, setPName] = useState('');
@@ -225,6 +229,8 @@ export const AdminPanel: React.FC = () => {
   // Open Product Modal for Create or Edit
   const openCreateProductModal = () => {
     setEditingProduct(null);
+    setProductModalError('');
+    setIsSavingProduct(false);
     setPName('');
     setPBanglaName('');
     setPCategory('gadgets');
@@ -243,6 +249,8 @@ export const AdminPanel: React.FC = () => {
 
   const openEditProductModal = (prod: Product) => {
     setEditingProduct(prod);
+    setProductModalError('');
+    setIsSavingProduct(false);
     setPName(prod.name);
     setPBanglaName(prod.banglaName || '');
     setPCategory(prod.category);
@@ -288,7 +296,7 @@ export const AdminPanel: React.FC = () => {
   };
 
   // Save Product
-  const handleSaveProduct = (e: React.FormEvent) => {
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pName.trim()) return;
 
@@ -309,44 +317,71 @@ export const AdminPanel: React.FC = () => {
 
     const images = [pImageUrl || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80'];
 
-    if (editingProduct) {
-      updateProduct(editingProduct.id, {
-        name: pName,
-        banglaName: pBanglaName,
-        category: pCategory,
-        price: Number(pPrice),
-        originalPrice: Number(pOriginalPrice),
-        stock: Number(pStock),
-        description: pDescription,
-        features: featureList,
-        images,
-        colors: colorList.length > 0 ? colorList : undefined,
-        sizes: sizeList.length > 0 ? sizeList : undefined,
-        isFeatured: pIsFeatured,
-        isTrending: pIsTrending,
-      });
-    } else {
-      addProduct({
-        name: pName,
-        banglaName: pBanglaName,
-        slug: pName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        price: Number(pPrice),
-        originalPrice: Number(pOriginalPrice),
-        rating: 5.0,
-        reviewsCount: 1,
-        category: pCategory,
-        description: pDescription,
-        features: featureList,
-        images,
-        stock: Number(pStock),
-        colors: colorList.length > 0 ? colorList : undefined,
-        sizes: sizeList.length > 0 ? sizeList : undefined,
-        isFeatured: pIsFeatured,
-        isTrending: pIsTrending,
-      });
-    }
+    setIsSavingProduct(true);
+    setProductModalError('');
 
-    setIsProductModalOpen(false);
+    try {
+      if (editingProduct) {
+        const res = await updateProduct(editingProduct.id, {
+          name: pName.trim(),
+          banglaName: pBanglaName.trim() || undefined,
+          category: pCategory,
+          price: Number(pPrice) || 0,
+          originalPrice: Number(pOriginalPrice) || Number(pPrice) || 0,
+          stock: Number(pStock) || 0,
+          description: pDescription.trim(),
+          features: featureList,
+          images,
+          colors: colorList,
+          sizes: sizeList,
+          isFeatured: pIsFeatured,
+          isTrending: pIsTrending,
+        });
+
+        if (res && !res.success) {
+          setProductModalError(res.error || 'Failed to save product in cloud.');
+          setIsSavingProduct(false);
+          return;
+        }
+
+        setProductActionToast({ message: `"${pName}" has been updated and synced across all devices!`, type: 'success' });
+      } else {
+        const res = await addProduct({
+          name: pName.trim(),
+          banglaName: pBanglaName.trim() || undefined,
+          slug: pName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          price: Number(pPrice) || 0,
+          originalPrice: Number(pOriginalPrice) || Number(pPrice) || 0,
+          rating: 5.0,
+          reviewsCount: 1,
+          category: pCategory,
+          description: pDescription.trim(),
+          features: featureList,
+          images,
+          stock: Number(pStock) || 0,
+          colors: colorList,
+          sizes: sizeList,
+          isFeatured: pIsFeatured,
+          isTrending: pIsTrending,
+        });
+
+        if (res && !res.success) {
+          setProductModalError(res.error || 'Failed to add product to cloud.');
+          setIsSavingProduct(false);
+          return;
+        }
+
+        setProductActionToast({ message: `"${pName}" has been added and published across all devices!`, type: 'success' });
+      }
+
+      setTimeout(() => setProductActionToast(null), 4000);
+      setIsProductModalOpen(false);
+    } catch (err: any) {
+      console.error('Save product error:', err);
+      setProductModalError(err?.message || 'Error saving product. Please try again.');
+    } finally {
+      setIsSavingProduct(false);
+    }
   };
 
   // Save Settings
@@ -1177,16 +1212,7 @@ export const AdminPanel: React.FC = () => {
                             </button>
                             <button
                               id={`btn-delete-prod-${prod.id}`}
-                              onClick={() => {
-                                try {
-                                  if (typeof window !== 'undefined' && window.confirm && !window.confirm(`Are you sure you want to delete "${prod.name}"?`)) {
-                                    return;
-                                  }
-                                } catch {
-                                  // In case window.confirm is restricted by sandboxed iframe
-                                }
-                                deleteProduct(prod.id);
-                              }}
+                              onClick={() => setProductToDelete(prod)}
                               className="p-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
                               title="Delete Product"
                             >
@@ -3440,6 +3466,13 @@ export const AdminPanel: React.FC = () => {
 
               {/* Modal Buttons */}
               <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                {productModalError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium rounded-xl flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                    <span>{productModalError}</span>
+                  </div>
+                )}
+
                 <p className="text-[11px] text-slate-500 flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                   <span>Syncs live to all devices via Firestore</span>
@@ -3447,22 +3480,93 @@ export const AdminPanel: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
+                    disabled={isSavingProduct}
                     onClick={() => setIsProductModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold cursor-pointer disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     id="btn-save-product-modal"
-                    className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-md cursor-pointer"
+                    disabled={isSavingProduct}
+                    className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold shadow-md cursor-pointer flex items-center gap-2"
                   >
-                    {editingProduct ? 'Update Product' : 'Add to Store'}
+                    {isSavingProduct ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Saving to Cloud...</span>
+                      </>
+                    ) : (
+                      <span>{editingProduct ? 'Update Product' : 'Add to Store'}</span>
+                    )}
                   </button>
                 </div>
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Product Action Toast Notification */}
+      {productActionToast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex items-center gap-3 px-5 py-3.5 bg-slate-900 text-white rounded-2xl shadow-xl border border-slate-700 text-sm font-medium">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>{productActionToast.message}</span>
+            <button
+              onClick={() => setProductActionToast(null)}
+              className="ml-2 text-slate-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Product In-App Confirmation Modal */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-5">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-950/50 flex items-center justify-center">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <h4 className="text-lg font-bold text-slate-900 dark:text-white">Delete Product?</h4>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              Are you sure you want to delete <strong className="text-slate-900 dark:text-white">"{productToDelete.name}"</strong>? This will permanently remove this item from the store and sync the deletion across all devices.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                id="btn-confirm-delete-product"
+                onClick={async () => {
+                  const targetProd = productToDelete;
+                  setProductToDelete(null);
+                  if (targetProd) {
+                    const res = await deleteProduct(targetProd.id);
+                    if (res && !res.success) {
+                      setProductActionToast({ message: `Failed to delete: ${res.error}`, type: 'info' });
+                    } else {
+                      setProductActionToast({ message: `"${targetProd.name}" was permanently deleted across all devices.`, type: 'info' });
+                    }
+                    setTimeout(() => setProductActionToast(null), 4000);
+                  }
+                }}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold shadow-xs transition-colors cursor-pointer"
+              >
+                Yes, Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

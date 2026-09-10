@@ -12,6 +12,7 @@ import {
   loginWithEmail,
   testConnection, 
   handleFirestoreError, 
+  cleanDataForFirestore,
   OperationType 
 } from '../services/firebase';
 import { 
@@ -135,9 +136,9 @@ interface StoreContextType {
   // Admin Operations
   adminLogin: (id: string, pass: string) => { success: boolean; role?: AdminRole; message?: string };
   adminLogout: () => void;
-  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => void;
-  updateProduct: (id: string, updatedData: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
+  addProduct: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<{ success: boolean; error?: string; product?: Product }>;
+  updateProduct: (id: string, updatedData: Partial<Product>) => Promise<{ success: boolean; error?: string }>;
+  deleteProduct: (id: string) => Promise<{ success: boolean; error?: string }>;
   updateSettings: (newSettings: Partial<SiteSettings>) => void;
   updateStaffCredentials: (staffId: string, staffPass: string) => void;
   resetToDefaults: () => void;
@@ -466,7 +467,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         snapshot.forEach((docSnap) => {
           remoteProducts.push(docSnap.data() as Product);
         });
-        remoteProducts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        remoteProducts.sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          if (timeB !== timeA) {
+            return timeB - timeA;
+          }
+          return (a.id || '').localeCompare(b.id || '');
+        });
         setProducts(remoteProducts);
         setCloudSyncStatus('synced');
         try {
@@ -787,7 +795,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setCoupons(prev => [newCoupon, ...prev]);
     try {
-      await setDoc(doc(db, 'coupons', newCoupon.id), newCoupon);
+      await setDoc(doc(db, 'coupons', newCoupon.id), cleanDataForFirestore(newCoupon));
     } catch (e) {
       console.warn('Error saving coupon to Firestore:', e);
     }
@@ -807,7 +815,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       })
     );
     try {
-      await setDoc(doc(db, 'coupons', id), updatedData, { merge: true });
+      await setDoc(doc(db, 'coupons', id), cleanDataForFirestore(updatedData), { merge: true });
     } catch (e) {
       console.warn('Error updating coupon in Firestore:', e);
     }
@@ -834,7 +842,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       prev.map(c => (c.id === id ? { ...c, isActive: !c.isActive } : c))
     );
     try {
-      await setDoc(doc(db, 'coupons', id), { isActive: newStatus }, { merge: true });
+      await setDoc(doc(db, 'coupons', id), cleanDataForFirestore({ isActive: newStatus }), { merge: true });
     } catch (e) {
       console.warn('Error toggling coupon status in Firestore:', e);
     }
@@ -1004,7 +1012,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Save order directly to Firestore
     try {
-      await setDoc(doc(db, 'orders', newOrder.id), newOrder);
+      await setDoc(doc(db, 'orders', newOrder.id), cleanDataForFirestore(newOrder));
     } catch (err) {
       console.error('Failed to save order to Firestore:', err);
     }
@@ -1021,7 +1029,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       prev.map(ord => (ord.id === orderId ? { ...ord, status, updatedAt: now } : ord))
     );
     try {
-      await setDoc(doc(db, 'orders', orderId), { status, updatedAt: now }, { merge: true });
+      await setDoc(doc(db, 'orders', orderId), cleanDataForFirestore({ status, updatedAt: now }), { merge: true });
     } catch (e) {
       console.warn('Error updating order status in Firestore:', e);
     }
@@ -1033,7 +1041,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       prev.map(ord => (ord.id === orderId ? { ...ord, paymentStatus, updatedAt: now } : ord))
     );
     try {
-      await setDoc(doc(db, 'orders', orderId), { paymentStatus, updatedAt: now }, { merge: true });
+      await setDoc(doc(db, 'orders', orderId), cleanDataForFirestore({ paymentStatus, updatedAt: now }), { merge: true });
     } catch (e) {
       console.warn('Error updating order payment status in Firestore:', e);
     }
@@ -1119,7 +1127,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setReviews(prev => [newRev, ...prev]);
 
     try {
-      await setDoc(doc(db, 'reviews', newRev.id), newRev);
+      await setDoc(doc(db, 'reviews', newRev.id), cleanDataForFirestore(newRev));
     } catch (e) {
       console.warn('Error saving review to Firestore:', e);
     }
@@ -1143,10 +1151,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
 
     try {
-      await setDoc(doc(db, 'products', reviewData.productId), {
+      await setDoc(doc(db, 'products', reviewData.productId), cleanDataForFirestore({
         rating: avg,
         reviewsCount: nextReviewsCount
-      }, { merge: true });
+      }), { merge: true });
     } catch (e) {
       console.warn('Error updating product rating in Firestore:', e);
     }
@@ -1273,44 +1281,72 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       ...prodData,
       id: `bvx-${Date.now()}`,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
+    const cleanedProduct = cleanDataForFirestore(newProduct);
+
     // Optimistic local state update for instant UI feedback
-    setProducts(prev => [newProduct, ...prev]);
+    setProducts(prev => {
+      const next = [newProduct, ...prev];
+      try {
+        localStorage.setItem('bredvex_products', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
     // Save to Firestore so every device instantly receives it
     try {
-      await setDoc(doc(db, 'products', newProduct.id), newProduct);
+      await setDoc(doc(db, 'products', newProduct.id), cleanedProduct);
+      return { success: true, product: newProduct };
     } catch (err) {
       console.error('Error saving product to Firestore:', err);
-      handleFirestoreError(err, OperationType.CREATE, `products/${newProduct.id}`);
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
     }
   };
 
   const updateProduct = async (id: string, updatedData: Partial<Product>) => {
+    const withTimestamp = {
+      ...updatedData,
+      updatedAt: new Date().toISOString()
+    };
+    const cleanedData = cleanDataForFirestore(withTimestamp);
+
     // Optimistic local state update
-    setProducts(prev =>
-      prev.map(prod => (prod.id === id ? { ...prod, ...updatedData } : prod))
-    );
+    setProducts(prev => {
+      const next = prev.map(prod => (prod.id === id ? { ...prod, ...withTimestamp } : prod));
+      try {
+        localStorage.setItem('bredvex_products', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
     // Save update to Firestore
     try {
-      await setDoc(doc(db, 'products', id), updatedData, { merge: true });
+      await setDoc(doc(db, 'products', id), cleanedData, { merge: true });
+      return { success: true };
     } catch (err) {
       console.error('Error updating product in Firestore:', err);
-      handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
     }
   };
 
   const deleteProduct = async (id: string) => {
     // Optimistic local state update
-    setProducts(prev => prev.filter(prod => prod.id !== id));
+    setProducts(prev => {
+      const next = prev.filter(prod => prod.id !== id);
+      try {
+        localStorage.setItem('bredvex_products', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
     // Delete from Firestore
     try {
       await deleteDoc(doc(db, 'products', id));
+      return { success: true };
     } catch (err) {
       console.error('Error deleting product from Firestore:', err);
-      handleFirestoreError(err, OperationType.DELETE, `products/${id}`);
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
     }
   };
 
@@ -1323,7 +1359,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     setSettings(prev => ({ ...prev, ...newSettings }));
     try {
-      await setDoc(doc(db, 'settings', 'store_config'), newSettings, { merge: true });
+      await setDoc(doc(db, 'settings', 'store_config'), cleanDataForFirestore(newSettings), { merge: true });
     } catch (err) {
       console.error('Error updating store settings in Firestore:', err);
     }
@@ -1343,9 +1379,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
       for (const p of INITIAL_PRODUCTS) {
-        await setDoc(doc(db, 'products', p.id), p);
+        await setDoc(doc(db, 'products', p.id), cleanDataForFirestore(p));
       }
-      await setDoc(doc(db, 'settings', 'store_config'), INITIAL_SETTINGS);
+      await setDoc(doc(db, 'settings', 'store_config'), cleanDataForFirestore(INITIAL_SETTINGS));
     } catch (e) {
       console.error('Error resetting Firestore to defaults:', e);
     }
@@ -1358,13 +1394,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (user) {
         setCurrentUser(user);
         try {
-          await setDoc(doc(db, 'users', user.uid), {
+          await setDoc(doc(db, 'users', user.uid), cleanDataForFirestore({
             id: user.uid,
             email: user.email,
             displayName: user.displayName,
             photoURL: user.photoURL,
             lastLoginAt: new Date().toISOString()
-          }, { merge: true });
+          }), { merge: true });
         } catch (e) {
           console.warn('Error saving user profile doc:', e);
         }
@@ -1438,7 +1474,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     try {
-      await setDoc(doc(db, 'users', uid), merged, { merge: true });
+      await setDoc(doc(db, 'users', uid), cleanDataForFirestore(merged), { merge: true });
     } catch (e) {
       console.warn('Could not save updated profile to Firestore:', e);
     }
@@ -1503,7 +1539,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } catch {}
 
       try {
-        await setDoc(doc(db, 'users', uid), newProfile, { merge: true });
+        await setDoc(doc(db, 'users', uid), cleanDataForFirestore(newProfile), { merge: true });
       } catch (e) {
         console.warn('Could not save new customer profile to Firestore:', e);
       }
