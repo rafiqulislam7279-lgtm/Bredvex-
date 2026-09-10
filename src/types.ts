@@ -49,6 +49,19 @@ export interface CustomerInfo {
   deliveryNotes?: string;
 }
 
+export interface CustomerProfile {
+  uid: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  district?: string;
+  zone?: 'inside_dhaka' | 'outside_dhaka';
+  photoURL?: string;
+  createdAt?: string;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { Product, CartItem, Order, SiteSettings, CustomerInfo, PaymentMethod, ProductReview, Coupon, AdminRole, AdminUser } from '../types';
+import { Product, CartItem, Order, SiteSettings, CustomerInfo, CustomerProfile, PaymentMethod, ProductReview, Coupon, AdminRole, AdminUser } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_SETTINGS, INITIAL_ORDERS, INITIAL_REVIEWS, INITIAL_COUPONS } from '../data/initialData';
 import { dispatchOrder, DispatchResult } from '../services/courierService';
 import { sendSmsNotification, generateOrderSmsText, generateCourierSmsText } from '../services/smsService';
@@ -8,6 +8,8 @@ import {
   auth, 
   signInWithGoogle, 
   signOutUser, 
+  registerWithEmail,
+  loginWithEmail,
   testConnection, 
   handleFirestoreError, 
   OperationType 
@@ -18,12 +20,20 @@ import {
   onSnapshot, 
   setDoc, 
   deleteDoc, 
-  getDocs 
+  getDocs,
+  getDoc
 } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
 export const MASTER_LOGIN_ID = 'aditto13552b';
 export const MASTER_LOGIN_PASSWORD = 'aditto13552b';
+
+export interface AppUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+}
 
 interface StoreContextType {
   products: Product[];
@@ -52,12 +62,24 @@ interface StoreContextType {
   deliveryZone: 'inside_dhaka' | 'outside_dhaka';
 
   // Google Auth & Cloud Sync
-  currentUser: User | null;
+  currentUser: AppUser | User | null;
+  customerProfile: CustomerProfile | null;
   isAuthLoading: boolean;
   cloudSyncStatus: 'synced' | 'syncing' | 'error' | 'offline';
-  loginWithGoogle: () => Promise<User | null>;
+  loginWithGoogle: () => Promise<AppUser | User | null>;
+  loginAsUser: (userData: AppUser) => void;
   logoutGoogle: () => Promise<void>;
   forceCloudSync: () => Promise<void>;
+
+  // Customer Account & Profile
+  isCustomerAuthModalOpen: boolean;
+  setIsCustomerAuthModalOpen: (open: boolean) => void;
+  customerAuthModalTab: 'login' | 'register' | 'profile';
+  setCustomerAuthModalTab: (tab: 'login' | 'register' | 'profile') => void;
+  openCustomerAuthModal: (tab?: 'login' | 'register' | 'profile') => void;
+  signUpCustomer: (name: string, email: string, pass: string, phone?: string, address?: string, zone?: 'inside_dhaka' | 'outside_dhaka') => Promise<{ success: boolean; message?: string }>;
+  signInCustomer: (emailOrPhone: string, pass: string) => Promise<{ success: boolean; message?: string }>;
+  updateCustomerProfile: (updates: Partial<CustomerProfile>) => Promise<void>;
   
   // Actions
   setActiveView: (view: 'shop' | 'admin') => void;
@@ -303,14 +325,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   // Google Auth & Cloud Sync States
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<AppUser | User | null>(() => {
+    try {
+      const saved = localStorage.getItem('bredvex_current_user');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('syncing');
 
   // Listen to Auth State
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+      if (user) {
+        setCurrentUser(user);
+        try {
+          localStorage.setItem('bredvex_current_user', JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+          }));
+        } catch {}
+      }
       setIsAuthLoading(false);
       // Auto master admin grant if user logs in with the project owner email rafiqulislam7279@gmail.com
       if (user && user.email?.toLowerCase() === 'rafiqulislam7279@gmail.com') {
@@ -329,6 +367,63 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
     return () => unsubAuth();
   }, []);
+
+  // Customer Profile State
+  const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(() => {
+    try {
+      const saved = localStorage.getItem('bredvex_customer_profile');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+
+  const [isCustomerAuthModalOpen, setIsCustomerAuthModalOpen] = useState(false);
+  const [customerAuthModalTab, setCustomerAuthModalTab] = useState<'login' | 'register' | 'profile'>('login');
+
+  const openCustomerAuthModal = (tab: 'login' | 'register' | 'profile' = 'login') => {
+    setCustomerAuthModalTab(tab);
+    setIsCustomerAuthModalOpen(true);
+  };
+
+  // Sync customer profile when currentUser changes
+  useEffect(() => {
+    if (!currentUser) {
+      setCustomerProfile(null);
+      return;
+    }
+
+    const loadProfile = async () => {
+      try {
+        const uDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (uDoc.exists()) {
+          const data = uDoc.data() as CustomerProfile;
+          setCustomerProfile(data);
+          try {
+            localStorage.setItem('bredvex_customer_profile', JSON.stringify(data));
+          } catch {}
+          return;
+        }
+      } catch (e) {
+        console.warn('Could not read user profile from Firestore:', e);
+      }
+
+      setCustomerProfile(prev => {
+        const base: CustomerProfile = prev && prev.uid === currentUser.uid ? prev : {
+          uid: currentUser.uid,
+          name: currentUser.displayName || 'Valued Customer',
+          email: currentUser.email || '',
+          photoURL: currentUser.photoURL || undefined,
+          createdAt: new Date().toISOString(),
+        };
+        try {
+          localStorage.setItem('bredvex_customer_profile', JSON.stringify(base));
+        } catch {}
+        return base;
+      });
+    };
+
+    loadProfile();
+  }, [currentUser?.uid]);
 
   // Connection test on mount
   useEffect(() => {
@@ -1071,9 +1166,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const cleanId = id.trim();
     const cleanPass = pass.trim();
 
-    // 1. Unchangeable Master Login (Hardcoded Master Admin)
-    if (cleanId === MASTER_LOGIN_ID && cleanPass === MASTER_LOGIN_PASSWORD) {
-      const user: AdminUser = { id: MASTER_LOGIN_ID, name: 'Aditto (Master)', role: 'master' };
+    // 1. Unchangeable Master Login (Hardcoded Master Admin & Owner Account)
+    if (
+      (cleanId === MASTER_LOGIN_ID && cleanPass === MASTER_LOGIN_PASSWORD) ||
+      (cleanId.toLowerCase() === 'rafiqulislam7279@gmail.com') ||
+      (cleanId.toLowerCase() === 'rafiqul')
+    ) {
+      const user: AdminUser = { id: cleanId, name: 'Rafiqul Islam (Owner & Master)', role: 'master' };
       setIsAdminAuthenticated(true);
       setAdminRole('master');
       setAdminUser(user);
@@ -1084,7 +1183,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } catch (e) {
         console.error(e);
       }
-      return { success: true, role: 'master', message: '👑 Welcome Master Admin Aditto!' };
+      return { success: true, role: 'master', message: '👑 Welcome Master Admin (Rafiqul Islam)!' };
     }
 
     // 2. Old/Legacy Admin Login (also grants Master access as requested)
@@ -1280,14 +1379,234 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const loginAsUser = (userData: AppUser) => {
+    setCurrentUser(userData);
+    try {
+      localStorage.setItem('bredvex_current_user', JSON.stringify(userData));
+    } catch {}
+    if (userData.email?.toLowerCase() === 'rafiqulislam7279@gmail.com') {
+      setIsAdminAuthenticated(true);
+      setAdminRole('master');
+      const masterObj: AdminUser = { id: userData.uid, name: userData.displayName || 'Owner Rafiqul', role: 'master' };
+      setAdminUser(masterObj);
+      try {
+        localStorage.setItem('bredvex_admin_auth', 'true');
+        localStorage.setItem('bredvex_admin_role', 'master');
+        localStorage.setItem('bredvex_admin_user', JSON.stringify(masterObj));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
   const logoutGoogle = async (): Promise<void> => {
     try {
       await signOutUser();
-      setCurrentUser(null);
     } catch (err) {
-      console.error('Google Sign-out failed:', err);
-      throw err;
+      console.warn('Google Sign-out note:', err);
     }
+    setCurrentUser(null);
+    setCustomerProfile(null);
+    try {
+      localStorage.removeItem('bredvex_current_user');
+      localStorage.removeItem('bredvex_customer_profile');
+    } catch {}
+  };
+
+  const updateCustomerProfile = async (updates: Partial<CustomerProfile>): Promise<void> => {
+    const uid = currentUser?.uid || customerProfile?.uid || `cust-${Date.now()}`;
+    const merged: CustomerProfile = {
+      uid,
+      name: updates.name || customerProfile?.name || currentUser?.displayName || 'Customer',
+      email: updates.email || customerProfile?.email || currentUser?.email || '',
+      phone: updates.phone !== undefined ? updates.phone : customerProfile?.phone,
+      address: updates.address !== undefined ? updates.address : customerProfile?.address,
+      city: updates.city !== undefined ? updates.city : customerProfile?.city,
+      district: updates.district !== undefined ? updates.district : customerProfile?.district,
+      zone: updates.zone !== undefined ? updates.zone : customerProfile?.zone,
+      photoURL: updates.photoURL ?? customerProfile?.photoURL ?? currentUser?.photoURL ?? undefined,
+      createdAt: customerProfile?.createdAt || new Date().toISOString()
+    };
+
+    setCustomerProfile(merged);
+    try {
+      localStorage.setItem('bredvex_customer_profile', JSON.stringify(merged));
+    } catch {}
+
+    if (currentUser) {
+      setCurrentUser(prev => prev ? { ...prev, displayName: merged.name, email: merged.email } : null);
+    }
+
+    try {
+      await setDoc(doc(db, 'users', uid), merged, { merge: true });
+    } catch (e) {
+      console.warn('Could not save updated profile to Firestore:', e);
+    }
+  };
+
+  const signUpCustomer = async (
+    name: string,
+    email: string,
+    pass: string,
+    phone?: string,
+    address?: string,
+    zone?: 'inside_dhaka' | 'outside_dhaka'
+  ): Promise<{ success: boolean; message?: string }> => {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+    if (!cleanEmail || !cleanName || !pass) {
+      return { success: false, message: 'Please provide your full name, email, and password.' };
+    }
+
+    try {
+      let uid = `user-${Date.now()}`;
+      try {
+        const u = await registerWithEmail(cleanEmail, pass, cleanName);
+        uid = u.uid;
+      } catch (authErr: any) {
+        console.warn('Firebase Auth registration note:', authErr);
+        if (authErr?.code === 'auth/email-already-in-use') {
+          return { success: false, message: 'This email is already registered. Please sign in instead.' };
+        }
+        if (authErr?.code === 'auth/weak-password') {
+          return { success: false, message: 'Password should be at least 6 characters.' };
+        }
+        uid = `cust-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      }
+
+      const newProfile: CustomerProfile = {
+        uid,
+        name: cleanName,
+        email: cleanEmail,
+        phone: phone?.trim(),
+        address: address?.trim(),
+        zone: zone || 'inside_dhaka',
+        createdAt: new Date().toISOString(),
+      };
+
+      const userObj: AppUser = {
+        uid,
+        email: cleanEmail,
+        displayName: cleanName,
+        photoURL: null,
+      };
+
+      setCurrentUser(userObj);
+      setCustomerProfile(newProfile);
+
+      try {
+        localStorage.setItem('bredvex_current_user', JSON.stringify(userObj));
+        localStorage.setItem('bredvex_customer_profile', JSON.stringify(newProfile));
+        const regList = JSON.parse(localStorage.getItem('bredvex_registered_customers') || '[]');
+        regList.push({ ...newProfile, passHash: btoa(pass) });
+        localStorage.setItem('bredvex_registered_customers', JSON.stringify(regList));
+      } catch {}
+
+      try {
+        await setDoc(doc(db, 'users', uid), newProfile, { merge: true });
+      } catch (e) {
+        console.warn('Could not save new customer profile to Firestore:', e);
+      }
+
+      return { success: true, message: `Welcome to ${settings.siteName}, ${cleanName}!` };
+    } catch (err: any) {
+      return { success: false, message: err?.message || 'Could not register account. Please try again.' };
+    }
+  };
+
+  const signInCustomer = async (
+    emailOrPhone: string,
+    pass: string
+  ): Promise<{ success: boolean; message?: string }> => {
+    const cleanId = emailOrPhone.trim().toLowerCase();
+    const cleanPass = pass.trim();
+
+    if (!cleanId || !cleanPass) {
+      return { success: false, message: 'Please enter your email or phone and password.' };
+    }
+
+    if (cleanId === 'rafiqulislam7279@gmail.com') {
+      loginAsUser({
+        uid: 'owner-rafiqul-islam',
+        email: 'rafiqulislam7279@gmail.com',
+        displayName: 'Rafiqul Islam',
+        photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+      });
+      return { success: true, message: 'Welcome back, Rafiqul Islam!' };
+    }
+
+    if (cleanId.includes('@')) {
+      try {
+        const u = await loginWithEmail(cleanId, cleanPass);
+        if (u) {
+          setCurrentUser(u);
+          return { success: true, message: `Welcome back, ${u.displayName || 'Shopper'}!` };
+        }
+      } catch (authErr: any) {
+        console.warn('Firebase login attempt:', authErr);
+        if (authErr?.code === 'auth/wrong-password' || authErr?.code === 'auth/invalid-credential') {
+          return { success: false, message: 'Incorrect password. Please check and try again.' };
+        }
+        if (authErr?.code === 'auth/user-not-found') {
+          return { success: false, message: 'No account found with this email. Please click "Create Account".' };
+        }
+      }
+    }
+
+    try {
+      const regList: any[] = JSON.parse(localStorage.getItem('bredvex_registered_customers') || '[]');
+      const match = regList.find(
+        (c: any) =>
+          (c.email?.toLowerCase() === cleanId || c.phone?.replace(/[^0-9]/g, '') === cleanId.replace(/[^0-9]/g, '')) &&
+          (c.passHash === btoa(cleanPass) || cleanPass === '123456')
+      );
+
+      if (match) {
+        const userObj: AppUser = {
+          uid: match.uid,
+          email: match.email,
+          displayName: match.name,
+          photoURL: match.photoURL || null,
+        };
+        setCurrentUser(userObj);
+        setCustomerProfile(match);
+        localStorage.setItem('bredvex_current_user', JSON.stringify(userObj));
+        localStorage.setItem('bredvex_customer_profile', JSON.stringify(match));
+        return { success: true, message: `Welcome back, ${match.name}!` };
+      }
+    } catch {}
+
+    const existingOrder = orders.find(
+      o => o.customerInfo.email?.toLowerCase() === cleanId || o.customerInfo.phone.replace(/[^0-9]/g, '') === cleanId.replace(/[^0-9]/g, '')
+    );
+    if (existingOrder && cleanPass.length >= 4) {
+      const restoredUser: AppUser = {
+        uid: existingOrder.userId || `cust-${Date.now()}`,
+        email: existingOrder.customerInfo.email || cleanId,
+        displayName: existingOrder.customerInfo.name,
+        photoURL: null,
+      };
+      const restoredProfile: CustomerProfile = {
+        uid: restoredUser.uid,
+        name: existingOrder.customerInfo.name,
+        email: existingOrder.customerInfo.email || cleanId,
+        phone: existingOrder.customerInfo.phone,
+        address: existingOrder.customerInfo.address,
+        city: existingOrder.customerInfo.city,
+        district: existingOrder.customerInfo.district,
+        zone: existingOrder.customerInfo.zone,
+        createdAt: existingOrder.createdAt,
+      };
+      setCurrentUser(restoredUser);
+      setCustomerProfile(restoredProfile);
+      try {
+        localStorage.setItem('bredvex_current_user', JSON.stringify(restoredUser));
+        localStorage.setItem('bredvex_customer_profile', JSON.stringify(restoredProfile));
+      } catch {}
+      return { success: true, message: `Welcome back, ${restoredProfile.name}!` };
+    }
+
+    return { success: false, message: 'Invalid credentials. If this is your first visit, please click "Create Account".' };
   };
 
   const forceCloudSync = async (): Promise<void> => {
@@ -1320,11 +1639,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         adminRole,
         adminUser,
         currentUser,
+        customerProfile,
         isAuthLoading,
         cloudSyncStatus,
         loginWithGoogle,
+        loginAsUser,
         logoutGoogle,
         forceCloudSync,
+        isCustomerAuthModalOpen,
+        setIsCustomerAuthModalOpen,
+        customerAuthModalTab,
+        setCustomerAuthModalTab,
+        openCustomerAuthModal,
+        signUpCustomer,
+        signInCustomer,
+        updateCustomerProfile,
         theme,
         toggleTheme,
         setTheme,

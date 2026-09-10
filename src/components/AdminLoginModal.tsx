@@ -11,7 +11,7 @@ import {
   ArrowRight,
   ShieldCheck
 } from 'lucide-react';
-import { useStore } from '../context/StoreContext';
+import { useStore, MASTER_LOGIN_ID, MASTER_LOGIN_PASSWORD } from '../context/StoreContext';
 import { GoogleAuthButton } from './GoogleAuthButton';
 
 interface AdminLoginModalProps {
@@ -20,11 +20,11 @@ interface AdminLoginModalProps {
 }
 
 export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) => {
-  const { adminLogin, setActiveView } = useStore();
+  const { adminLogin, setActiveView, settings } = useStore();
 
   const [loginRoleTab, setLoginRoleTab] = useState<'master' | 'staff' | 'legacy'>('master');
-  const [adminId, setAdminId] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
+  const [adminId, setAdminId] = useState(MASTER_LOGIN_ID);
+  const [adminPassword, setAdminPassword] = useState(MASTER_LOGIN_PASSWORD);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [loginSuccessMsg, setLoginSuccessMsg] = useState('');
@@ -34,6 +34,16 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
   const handleSelectRolePreset = (role: 'master' | 'staff' | 'legacy') => {
     setLoginRoleTab(role);
     setLoginError('');
+    if (role === 'master') {
+      setAdminId(MASTER_LOGIN_ID);
+      setAdminPassword(MASTER_LOGIN_PASSWORD);
+    } else if (role === 'staff') {
+      setAdminId(settings.staffLoginId || 'staff');
+      setAdminPassword(settings.staffPassword || 'staff123');
+    } else if (role === 'legacy') {
+      setAdminId(settings.adminLoginId || 'admin');
+      setAdminPassword(settings.adminPassword || '123456');
+    }
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -152,6 +162,32 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
             </p>
           )}
         </div>
+
+        <button
+          type="button"
+          id="btn-quick-1click-modal-login"
+          onClick={() => {
+            let res;
+            if (loginRoleTab === 'master') {
+              res = adminLogin(MASTER_LOGIN_ID, MASTER_LOGIN_PASSWORD);
+            } else if (loginRoleTab === 'staff') {
+              res = adminLogin(settings.staffLoginId || 'staff', settings.staffPassword || 'staff123');
+            } else {
+              res = adminLogin(settings.adminLoginId || 'admin', settings.adminPassword || '123456');
+            }
+            if (res.success) {
+              setLoginSuccessMsg(res.message || 'Login successful!');
+              setTimeout(() => {
+                onClose();
+                setActiveView('admin');
+              }, 400);
+            }
+          }}
+          className="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
+        >
+          <ShieldCheck className="w-4 h-4" />
+          <span>Instant 1-Click Sign In ({loginRoleTab === 'master' ? 'Master Admin' : loginRoleTab === 'staff' ? 'Staff' : 'Admin'})</span>
+        </button>
 
         {loginSuccessMsg && (
           <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs rounded-xl font-medium flex items-center gap-2">

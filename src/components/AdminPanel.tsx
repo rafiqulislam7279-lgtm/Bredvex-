@@ -42,7 +42,7 @@ import {
   Users,
   UserCheck
 } from 'lucide-react';
-import { useStore, MASTER_LOGIN_ID } from '../context/StoreContext';
+import { useStore, MASTER_LOGIN_ID, MASTER_LOGIN_PASSWORD } from '../context/StoreContext';
 import { Product, SiteSettings, Order, CourierSettings } from '../types';
 import { INITIAL_CATEGORIES } from '../data/initialData';
 import { InvoiceModal } from './InvoiceModal';
@@ -187,6 +187,16 @@ export const AdminPanel: React.FC = () => {
   const handleSelectRolePreset = (role: 'master' | 'staff' | 'legacy') => {
     setLoginRoleTab(role);
     setLoginError('');
+    if (role === 'master') {
+      setAdminId(MASTER_LOGIN_ID);
+      setAdminPassword(MASTER_LOGIN_PASSWORD);
+    } else if (role === 'staff') {
+      setAdminId(settings.staffLoginId || 'staff');
+      setAdminPassword(settings.staffPassword || 'staff123');
+    } else if (role === 'legacy') {
+      setAdminId(settings.adminLoginId || 'admin');
+      setAdminPassword(settings.adminPassword || '123456');
+    }
   };
 
   // Handle Staff Credential Updates
@@ -567,6 +577,24 @@ export const AdminPanel: React.FC = () => {
               </p>
             )}
           </div>
+
+          <button
+            type="button"
+            id="btn-quick-1click-admin-login"
+            onClick={() => {
+              if (loginRoleTab === 'master') {
+                adminLogin(MASTER_LOGIN_ID, MASTER_LOGIN_PASSWORD);
+              } else if (loginRoleTab === 'staff') {
+                adminLogin(settings.staffLoginId || 'staff', settings.staffPassword || 'staff123');
+              } else {
+                adminLogin(settings.adminLoginId || 'admin', settings.adminPassword || '123456');
+              }
+            }}
+            className="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Instant 1-Click Sign In ({loginRoleTab === 'master' ? 'Master Admin' : loginRoleTab === 'staff' ? 'Staff' : 'Admin'})</span>
+          </button>
 
           {loginError && (
             <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs rounded-xl font-medium flex items-center gap-2">

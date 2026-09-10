@@ -28,7 +28,8 @@ export const CheckoutModal: React.FC = () => {
     setDeliveryZone,
     settings,
     checkout,
-    currentUser
+    currentUser,
+    customerProfile
   } = useStore();
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -40,9 +41,17 @@ export const CheckoutModal: React.FC = () => {
   const [address, setAddress] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   
-  // Auto-prefill if Google user is logged in
+  // Auto-prefill if customer profile or Google user is logged in
   useEffect(() => {
-    if (currentUser) {
+    if (customerProfile) {
+      if (customerProfile.name) setName(customerProfile.name);
+      if (customerProfile.email) setEmail(customerProfile.email);
+      if (customerProfile.phone) setPhone(customerProfile.phone);
+      if (customerProfile.address) setAddress(customerProfile.address);
+      if (customerProfile.city) setCity(customerProfile.city);
+      if (customerProfile.district) setDistrict(customerProfile.district);
+      if (customerProfile.zone) setDeliveryZone(customerProfile.zone);
+    } else if (currentUser) {
       if (!name && currentUser.displayName) {
         setName(currentUser.displayName);
       }
@@ -50,7 +59,7 @@ export const CheckoutModal: React.FC = () => {
         setEmail(currentUser.email);
       }
     }
-  }, [currentUser]);
+  }, [customerProfile, currentUser]);
   
   // Payment states
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bkash');

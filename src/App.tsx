@@ -12,6 +12,7 @@ import { CheckoutModal } from './components/CheckoutModal';
 import { OrderSuccessModal } from './components/OrderSuccessModal';
 import { TrackOrderModal } from './components/TrackOrderModal';
 import { WishlistModal } from './components/WishlistModal';
+import { CustomerAuthModal } from './components/CustomerAuthModal';
 import { AdminPanel } from './components/AdminPanel';
 import { Footer } from './components/Footer';
 import { FlashSaleBanner } from './components/FlashSaleBanner';
@@ -268,6 +269,9 @@ const MainShop: React.FC = () => {
 
       {/* Wishlist Modal */}
       <WishlistModal />
+
+      {/* Customer Account & Auth Modal */}
+      <CustomerAuthModal />
 
       {/* Floating 1-Click WhatsApp Customer Care & Order Button */}
       <WhatsAppChatButton />

@@ -1,5 +1,15 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged, User } from 'firebase/auth';
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signOut as firebaseSignOut, 
+  onAuthStateChanged, 
+  User,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile
+} from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer, collection, getDocs, setDoc, deleteDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -91,4 +101,21 @@ export async function signOutUser(): Promise<void> {
     console.error('Sign Out Error:', error);
     throw error;
   }
+}
+
+export async function registerWithEmail(email: string, pass: string, name: string): Promise<User> {
+  const result = await createUserWithEmailAndPassword(auth, email, pass);
+  if (name && result.user) {
+    try {
+      await updateProfile(result.user, { displayName: name });
+    } catch (e) {
+      console.warn('Could not update profile displayName:', e);
+    }
+  }
+  return result.user;
+}
+
+export async function loginWithEmail(email: string, pass: string): Promise<User> {
+  const result = await signInWithEmailAndPassword(auth, email, pass);
+  return result.user;
 }
