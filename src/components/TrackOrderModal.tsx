@@ -311,7 +311,7 @@ export const TrackOrderModal: React.FC = () => {
                   {searchedOrder.items.map((item, idx) => (
                     <div key={idx} className="p-2.5 bg-slate-50 rounded-xl flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <img src={item.product.images[0]} alt="" className="w-8 h-8 rounded-md object-cover" />
+                        <img src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80'} alt="" className="w-8 h-8 rounded-md object-cover" />
                         <span className="font-medium text-slate-800">{item.product.name} (x{item.quantity})</span>
                       </div>
                       <span className="font-mono font-bold text-slate-900">৳{(item.product.price * item.quantity).toLocaleString()}</span>

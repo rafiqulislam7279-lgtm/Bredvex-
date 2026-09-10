@@ -163,7 +163,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
               {/* Main Image */}
               <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
                 <img
-                  src={product.images[selectedImageIndex] || product.images[0]}
+                  src={product.images?.[selectedImageIndex] || product.images?.[0] || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80'}
                   alt={product.name}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"

@@ -339,7 +339,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let isSeeding = false;
     const unsubProducts = onSnapshot(collection(db, 'products'), async (snapshot) => {
-      if (snapshot.empty && !isSeeding) {
+      const alreadySeeded = typeof window !== 'undefined' && localStorage.getItem('bredvex_has_seeded') === 'true';
+
+      if (snapshot.empty && !isSeeding && !alreadySeeded) {
         isSeeding = true;
         setCloudSyncStatus('syncing');
         for (const p of INITIAL_PRODUCTS) {
@@ -349,9 +351,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             console.error('Seed product error:', e);
           }
         }
+        try {
+          localStorage.setItem('bredvex_has_seeded', 'true');
+        } catch {}
         setProducts(INITIAL_PRODUCTS);
         setCloudSyncStatus('synced');
-      } else if (!snapshot.empty) {
+      } else if (snapshot.empty) {
+        // Admin intentionally deleted all products
+        setProducts([]);
+        setCloudSyncStatus('synced');
+        try {
+          localStorage.setItem('bredvex_products', JSON.stringify([]));
+        } catch {}
+      } else {
+        try {
+          localStorage.setItem('bredvex_has_seeded', 'true');
+        } catch {}
         const remoteProducts: Product[] = [];
         snapshot.forEach((docSnap) => {
           remoteProducts.push(docSnap.data() as Product);
@@ -1256,7 +1271,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
       return user;
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        return null;
+      }
       console.error('Google Sign-in failed:', err);
       throw err;
     }

@@ -132,7 +132,7 @@ export const OrderSuccessModal: React.FC = () => {
                 <div key={idx} className="p-2 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 overflow-hidden">
                     <img
-                      src={item.product.images[0]}
+                      src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80'}
                       alt={item.product.name}
                       className="w-10 h-10 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
                       referrerPolicy="no-referrer"

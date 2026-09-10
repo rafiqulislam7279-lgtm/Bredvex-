@@ -73,7 +73,7 @@ export const WishlistModal: React.FC = () => {
                   }}
                 >
                   <img
-                    src={prod.images[0]}
+                    src={prod.images?.[0] || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80'}
                     alt={prod.name}
                     className="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0"
                     referrerPolicy="no-referrer"

@@ -25,13 +25,18 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
     setIsLoading(true);
     setAuthError(null);
     try {
-      await loginWithGoogle();
-      if (onSuccess) onSuccess();
+      const user = await loginWithGoogle();
+      if (user && onSuccess) {
+        onSuccess();
+      }
     } catch (err: any) {
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        // User closed or dismissed the popup window, normal action
+        return;
+      }
       console.error('Google Sign-in error:', err);
-      // Give a friendly message if popup closed or blocked
-      if (err?.code === 'auth/popup-closed-by-user') {
-        setAuthError('Sign-in cancelled');
+      if (err?.code === 'auth/popup-blocked') {
+        setAuthError('Popup blocked by browser. Please allow popups.');
       } else {
         setAuthError('Could not sign in with Google');
       }

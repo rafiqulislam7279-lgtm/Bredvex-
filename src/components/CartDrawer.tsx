@@ -142,7 +142,7 @@ export const CartDrawer: React.FC = () => {
                   {/* Thumbnail */}
                   <div className="w-18 h-18 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/80">
                     <img
-                      src={item.product.images[0]}
+                      src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80'}
                       alt={item.product.name}
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"

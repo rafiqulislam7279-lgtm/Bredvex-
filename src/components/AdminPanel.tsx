@@ -240,8 +240,8 @@ export const AdminPanel: React.FC = () => {
     setPOriginalPrice(prod.originalPrice || prod.price);
     setPStock(prod.stock);
     setPDescription(prod.description);
-    setPFeatures(prod.features.join('\n'));
-    setPImageUrl(prod.images[0] || '');
+    setPFeatures(prod.features?.join('\n') || '');
+    setPImageUrl(prod.images?.[0] || '');
     setPColors(prod.colors?.join(', ') || '');
     setPSizes(prod.sizes?.join(', ') || '');
     setPIsFeatured(!!prod.isFeatured);
@@ -1087,7 +1087,7 @@ export const AdminPanel: React.FC = () => {
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
                             <img
-                              src={prod.images[0]}
+                              src={prod.images?.[0] || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80'}
                               alt={prod.name}
                               className="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-slate-100 shrink-0"
                               referrerPolicy="no-referrer"
@@ -1150,9 +1150,14 @@ export const AdminPanel: React.FC = () => {
                             <button
                               id={`btn-delete-prod-${prod.id}`}
                               onClick={() => {
-                                if (window.confirm(`Are you sure you want to delete "${prod.name}"?`)) {
-                                  deleteProduct(prod.id);
+                                try {
+                                  if (typeof window !== 'undefined' && window.confirm && !window.confirm(`Are you sure you want to delete "${prod.name}"?`)) {
+                                    return;
+                                  }
+                                } catch {
+                                  // In case window.confirm is restricted by sandboxed iframe
                                 }
+                                deleteProduct(prod.id);
                               }}
                               className="p-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
                               title="Delete Product"
@@ -1483,7 +1488,7 @@ export const AdminPanel: React.FC = () => {
                       <div className="flex flex-wrap gap-2">
                         {ord.items.map((item, i) => (
                           <div key={i} className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                            <img src={item.product.images[0]} alt="" className="w-8 h-8 rounded-lg object-cover" />
+                            <img src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80'} alt="" className="w-8 h-8 rounded-lg object-cover" />
                             <div>
                               <p className="font-semibold text-slate-800">{item.product.name}</p>
                               <p className="text-[10px] text-slate-500">
