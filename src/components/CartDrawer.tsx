@@ -6,7 +6,6 @@ import {
   ArrowRight, 
   Plus, 
   Minus, 
-  Sparkles, 
   Tag, 
   Truck,
   CheckCircle2

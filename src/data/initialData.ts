@@ -45,7 +45,7 @@ export const INITIAL_CATEGORIES: Category[] = [
     id: 'lifestyle',
     name: 'Grooming & Care',
     banglaName: 'গ্রুমিং ও যত্ন',
-    iconName: 'Sparkles',
+    iconName: 'Heart',
     image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80',
     description: 'Premium beard kits, organic oils & body essentials'
   }

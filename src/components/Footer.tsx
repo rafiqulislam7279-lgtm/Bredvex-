@@ -13,6 +13,7 @@ import { useStore } from '../context/StoreContext';
 import { INITIAL_CATEGORIES } from '../data/initialData';
 import { PortalLoginSection } from './PortalLoginSection';
 import { AdminLoginModal } from './AdminLoginModal';
+import { BrandLogo } from './BrandLogo';
 
 export const Footer: React.FC = () => {
   const { 
@@ -84,9 +85,7 @@ export const Footer: React.FC = () => {
               {settings.logoUrl ? (
                 <img src={settings.logoUrl} alt={settings.siteName} className="h-9 w-auto rounded-md" />
               ) : (
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-900 to-rose-600 flex items-center justify-center text-white font-black text-lg">
-                  B
-                </div>
+                <BrandLogo size="sm" />
               )}
               <span className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight font-serif">
                 {settings.siteName}

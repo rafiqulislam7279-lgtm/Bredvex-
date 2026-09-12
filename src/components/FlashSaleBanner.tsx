@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Clock, ArrowRight, Sparkles } from 'lucide-react';
+import { Flame, Clock, ArrowRight } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
 interface TimeLeft {

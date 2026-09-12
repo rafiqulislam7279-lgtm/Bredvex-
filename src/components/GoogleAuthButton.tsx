@@ -7,7 +7,6 @@ import {
   CheckCircle2, 
   AlertCircle,
   ExternalLink,
-  Zap,
   HelpCircle,
   X,
   Copy,
@@ -88,7 +87,6 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
     currentUser, 
     customerProfile,
     loginWithGoogle, 
-    loginAsUser,
     logoutGoogle, 
     setIsTrackOrderOpen, 
     setActiveView,
@@ -132,20 +130,6 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
       setDropdownOpen(false);
     } catch (err) {
       console.error('Google Sign-out error:', err);
-    }
-  };
-
-  const handleOneClickOwnerLogin = () => {
-    loginAsUser({
-      uid: 'owner-rafiqul-islam',
-      email: 'rafiqulislam7279@gmail.com',
-      displayName: 'Rafiqul Islam',
-      photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-    });
-    setErrorInfo(null);
-    setShowHelpModal(false);
-    if (onSuccess) {
-      onSuccess();
     }
   };
 
@@ -201,35 +185,10 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
             </div>
           </div>
 
-          {/* Quick Solution 1: 1-Click Sign In as Owner / Verified Shopper */}
-          <div className="p-4 bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/40 dark:to-amber-900/20 border border-amber-200 dark:border-amber-800/60 rounded-2xl space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-amber-950 dark:text-amber-200 flex items-center gap-1.5 uppercase tracking-wide">
-                <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400 fill-current" />
-                Recommended Quick Action
-              </span>
-              <span className="text-[10px] font-bold bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 px-2 py-0.5 rounded-full">
-                Instant • No Config
-              </span>
-            </div>
-            <p className="text-xs text-amber-900/80 dark:text-amber-300 leading-relaxed">
-              Sign in directly as verified owner <strong>Rafiqul Islam</strong> (<code>rafiqulislam7279@gmail.com</code>). This instantly verifies your customer account, pre-fills checkout, and unlocks full Master Admin rights!
-            </p>
-            <button
-              type="button"
-              id="btn-modal-1click-owner-login"
-              onClick={handleOneClickOwnerLogin}
-              className="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
-            >
-              <Zap className="w-4 h-4 fill-current" />
-              <span>⚡ 1-Click Sign In as Rafiqul Islam (Verified)</span>
-            </button>
-          </div>
-
-          {/* Alternative Solutions */}
+          {/* Troubleshooting Options */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Other Ways to Connect
+              Connection Options
             </h4>
 
             {/* Open in new tab */}
@@ -401,15 +360,6 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
               )}
               <span>Google</span>
             </button>
-
-            <button
-              type="button"
-              onClick={handleOneClickOwnerLogin}
-              title="1-Click Customer Sign-In (Rafiqul Islam)"
-              className="p-1.5 bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded-xl border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer shrink-0"
-            >
-              <Zap className="w-3.5 h-3.5 fill-current" />
-            </button>
           </div>
         </div>
 
@@ -421,7 +371,7 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
               onClick={() => setShowHelpModal(true)}
               className="text-[11px] font-bold text-rose-700 dark:text-rose-300 underline shrink-0 cursor-pointer"
             >
-              Resolve / 1-Click
+              Troubleshoot
             </button>
           </div>
         )}
@@ -463,9 +413,9 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
             <button
               type="button"
               onClick={() => setShowHelpModal(true)}
-              className="px-2.5 py-1 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-[11px] rounded-lg shadow-2xs transition-colors cursor-pointer shrink-0"
+              className="px-2.5 py-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold text-[11px] rounded-lg shadow-2xs transition-colors cursor-pointer shrink-0"
             >
-              Fix / 1-Click
+              Troubleshoot
             </button>
           </div>
         )}
@@ -540,35 +490,25 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
           <span>Customer Sign In / Create Account</span>
         </button>
 
-        <div className="flex gap-1.5">
-          <button
-            onClick={handleSignIn}
-            disabled={isLoading}
-            className="flex-1 flex items-center justify-between p-2.5 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200/70 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700/60 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-2">
-              <img 
-                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
-                alt="Google" 
-                className="w-4 h-4" 
-              />
-              <div className="text-left">
-                <span className="text-xs font-semibold block">Continue with Google</span>
-              </div>
+        <button
+          onClick={handleSignIn}
+          disabled={isLoading}
+          className="w-full flex items-center justify-between p-2.5 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200/70 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700/60 transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <img 
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+              alt="Google" 
+              className="w-4 h-4" 
+            />
+            <div className="text-left">
+              <span className="text-xs font-semibold block">Continue with Google</span>
             </div>
-            <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-700 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">
-              1-Click
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={handleOneClickOwnerLogin}
-            title="Instant 1-Click Sign-In (Rafiqul Islam)"
-            className="px-3 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl font-bold flex items-center justify-center cursor-pointer"
-          >
-            <Zap className="w-4 h-4 fill-current" />
-          </button>
-        </div>
+          </div>
+          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-700 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">
+            Sign In
+          </span>
+        </button>
 
         {errorInfo && (
           <button
@@ -577,7 +517,7 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
             className="w-full p-2 text-left bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-[11px] text-rose-700 dark:text-rose-300 flex items-center justify-between"
           >
             <span>{errorInfo.title}</span>
-            <span className="underline font-bold">Fix / 1-Click</span>
+            <span className="underline font-bold">Troubleshoot</span>
           </button>
         )}
 
@@ -727,15 +667,6 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
           />
         )}
         <span>Google</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={handleOneClickOwnerLogin}
-        title="1-Click Owner Sign In (Rafiqul Islam)"
-        className="p-1.5 bg-amber-100/80 dark:bg-amber-950/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 rounded-xl border border-amber-300/80 dark:border-amber-800 transition-colors cursor-pointer"
-      >
-        <Zap className="w-3.5 h-3.5 fill-current" />
       </button>
 
       {errorInfo && (

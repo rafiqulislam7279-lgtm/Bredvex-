@@ -3,7 +3,6 @@ import {
   Crown, 
   UserCheck, 
   LogOut, 
-  Sparkles, 
   LayoutDashboard, 
   ArrowRight,
   ShieldCheck
@@ -65,7 +64,7 @@ export const PortalLoginSection: React.FC = () => {
         {/* Permissions Explanatory Card */}
         <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
           <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            <ShieldCheck className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             <span>Current Permissions & Access Level:</span>
           </div>
           <p className="text-slate-600 dark:text-slate-400 leading-relaxed">

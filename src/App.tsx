@@ -20,7 +20,6 @@ import { WhatsAppChatButton } from './components/WhatsAppChatButton';
 import { INITIAL_CATEGORIES } from './data/initialData';
 import { 
   SlidersHorizontal, 
-  Sparkles, 
   ArrowUpDown, 
   Check, 
   X, 
@@ -104,8 +103,8 @@ const MainShop: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-6">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 font-bold">
-                  <Sparkles className="w-4 h-4" />
+                <span className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 font-bold border border-rose-200/60 dark:border-rose-900/50 shadow-2xs inline-flex items-center justify-center">
+                  <ShoppingBag className="w-4 h-4" />
                 </span>
                 <span className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
                   Curated Catalog

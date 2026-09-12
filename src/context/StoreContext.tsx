@@ -1561,16 +1561,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return { success: false, message: 'Please enter your email or phone and password.' };
     }
 
-    if (cleanId === 'rafiqulislam7279@gmail.com') {
-      loginAsUser({
-        uid: 'owner-rafiqul-islam',
-        email: 'rafiqulislam7279@gmail.com',
-        displayName: 'Rafiqul Islam',
-        photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-      });
-      return { success: true, message: 'Welcome back, Rafiqul Islam!' };
-    }
-
     if (cleanId.includes('@')) {
       try {
         const u = await loginWithEmail(cleanId, cleanPass);

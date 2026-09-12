@@ -10,7 +10,7 @@ import {
   Check, 
   Plus, 
   Minus,
-  Sparkles,
+  Zap,
   Share2,
   MessageCircle,
   Send,
@@ -358,7 +358,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
                   disabled={product.stock <= 0}
                   className="py-3.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm shadow-md shadow-rose-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Zap className="w-4 h-4 fill-current" />
                   <span>Buy Now (অর্ডার করুন)</span>
                 </button>
               </div>

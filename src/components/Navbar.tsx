@@ -15,6 +15,7 @@ import { useStore } from '../context/StoreContext';
 import { INITIAL_CATEGORIES } from '../data/initialData';
 import { ThemeToggle } from './ThemeToggle';
 import { GoogleAuthButton } from './GoogleAuthButton';
+import { BrandLogo } from './BrandLogo';
 
 export const Navbar: React.FC = () => {
   const {
@@ -73,18 +74,18 @@ export const Navbar: React.FC = () => {
                 <Truck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                 <span>Track Order</span>
               </button>
-              <button
-                id="btn-nav-admin-top"
-                onClick={() => setActiveView('admin')}
-                className="flex items-center gap-1 text-amber-800 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200 font-medium transition-colors cursor-pointer bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 px-2.5 py-0.5 rounded-md border border-amber-300/80 dark:border-amber-500/20"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                <span>
-                  {isAdminAuthenticated 
-                    ? (adminRole === 'master' ? '👑 Master Portal' : '👤 Staff Portal') 
-                    : 'Admin Login'}
-                </span>
-              </button>
+              {isAdminAuthenticated && (
+                <button
+                  id="btn-nav-admin-top"
+                  onClick={() => setActiveView('admin')}
+                  className="flex items-center gap-1 text-amber-800 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200 font-medium transition-colors cursor-pointer bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 px-2.5 py-0.5 rounded-md border border-amber-300/80 dark:border-amber-500/20"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span>
+                    {adminRole === 'master' ? '👑 Master Portal' : '👤 Staff Portal'}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -112,9 +113,7 @@ export const Navbar: React.FC = () => {
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-slate-950 via-slate-900 to-rose-600 flex items-center justify-center text-white font-extrabold text-xl shadow-md group-hover:scale-105 transition-transform duration-200">
-                  <span>B</span>
-                </div>
+                <BrandLogo size="md" />
               )}
               <div>
                 <span className="font-extrabold text-2xl tracking-tight text-slate-900 dark:text-white font-serif flex items-center gap-1.5">

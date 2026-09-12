@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MessageSquare, Send, CheckCircle2, AlertCircle, Phone, Sparkles } from 'lucide-react';
+import { X, MessageSquare, Send, CheckCircle2, AlertCircle, Phone } from 'lucide-react';
 import { Order, SiteSettings } from '../types';
 import { generateOrderSmsText, generateCourierSmsText } from '../services/smsService';
 import { useStore } from '../context/StoreContext';
