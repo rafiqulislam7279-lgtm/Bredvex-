@@ -6,7 +6,7 @@ import {
   RefreshCcw, 
   CreditCard, 
   Award,
-  Zap
+  Tag
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { INITIAL_CATEGORIES } from '../data/initialData';
@@ -118,7 +118,7 @@ export const Hero: React.FC = () => {
                 
                 {/* Floating Discount Tag */}
                 <div className="absolute top-4 right-4 bg-rose-600/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-lg border border-rose-400/30 flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 fill-current" />
+                  <Tag className="w-3.5 h-3.5" />
                   <span>Up to 40% OFF</span>
                 </div>
 

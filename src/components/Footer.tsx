@@ -227,7 +227,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-200 dark:border-slate-900 flex flex-wrap items-center justify-between gap-4 text-[11px] text-slate-500 dark:text-slate-500">
-          <p>© {new Date().getFullYear()} {settings.siteName}. All Rights Reserved. by Aditto</p>
+          <p>© {new Date().getFullYear()} {settings.siteName} Bangladesh. All Rights Reserved.</p>
           <div className="flex items-center gap-4">
             <button
               type="button"
@@ -243,7 +243,7 @@ export const Footer: React.FC = () => {
               {isAdminAuthenticated ? 'Staff / Admin Dashboard' : 'Staff / Admin Portal'}
             </button>
             <span>•</span>
-            <span>Made with precision for BREDVEX</span>
+            <span>Premium E-Commerce Platform</span>
           </div>
         </div>
 

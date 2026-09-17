@@ -218,7 +218,7 @@ const MainShop: React.FC = () => {
             <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-rose-500/10 dark:bg-rose-600/20 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10 max-w-2xl space-y-3">
               <span className="px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold text-xs uppercase tracking-wider border border-rose-200 dark:border-rose-500/30 inline-flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5" /> Nationwide Free Delivery
+                <Truck className="w-3.5 h-3.5" /> Nationwide Free Delivery
               </span>
               <h3 className="text-2xl sm:text-3xl font-black font-serif text-slate-900 dark:text-white">
                 Shop over ৳{settings.freeDeliveryThreshold.toLocaleString()} for Free Shipping all across Bangladesh

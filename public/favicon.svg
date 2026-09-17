@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090d16"/>
+      <stop offset="60%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#e11d48"/>
+    </linearGradient>
+    <linearGradient id="goldAcc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fecdd3"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded Squircle Base -->
+  <rect width="64" height="64" rx="16" fill="url(#bgGrad)"/>
+  <rect width="62" height="62" x="1" y="1" rx="15" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1.5"/>
+  <!-- Luxury Architectural "B" Monogram -->
+  <path d="M20 16 h14 c6.075 0 11 4.477 11 10 0 3.5-1.9 6.6-4.8 8.4 C43.8 36.3 46 39.8 46 44 c0 6.627-5.82 12-13 12 H20 c-1.1 0-2-.9-2-2 V18 c0-1.1.9-2 2-2 z" fill="url(#goldAcc)"/>
+  <!-- Upper Counter Negative Space -->
+  <rect x="25" y="22" width="8" height="8" rx="2" fill="#0b1120"/>
+  <path d="M33 22 c3.3 0 6 1.8 6 4 s-2.7 4-6 4 z" fill="#0b1120"/>
+  <!-- Lower Counter Negative Space -->
+  <rect x="25" y="36" width="9" height="11" rx="2" fill="#0b1120"/>
+  <path d="M34 36 c4.4 0 8 2.5 8 5.5 s-3.6 5.5-8 5.5 z" fill="#0b1120"/>
+  <!-- Signature Ruby Inset Accent -->
+  <circle cx="34" cy="26" r="2.2" fill="#f43f5e"/>
+  <circle cx="35" cy="41.5" r="2.5" fill="#f43f5e"/>
+</svg>

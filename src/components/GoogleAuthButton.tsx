@@ -334,31 +334,13 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => openCustomerAuthModal('login')}
-              className="px-3 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-2xs transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-2xs transition-colors cursor-pointer"
             >
               Sign In / Register
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSignIn}
-              disabled={isLoading}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-white bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 rounded-xl shadow-2xs transition-colors cursor-pointer shrink-0 disabled:opacity-50"
-            >
-              {isLoading ? (
-                <span className="w-3.5 h-3.5 border-2 border-slate-400 border-t-rose-600 rounded-full animate-spin" />
-              ) : (
-                <img 
-                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
-                  alt="" 
-                  className="w-3.5 h-3.5" 
-                />
-              )}
-              <span>Google</span>
             </button>
           </div>
         </div>
@@ -487,41 +469,8 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
           className="w-full py-2.5 px-3 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-xs cursor-pointer transition-colors"
         >
           <User className="w-4 h-4" />
-          <span>Customer Sign In / Create Account</span>
+          <span>Customer Sign In / My Account</span>
         </button>
-
-        <button
-          onClick={handleSignIn}
-          disabled={isLoading}
-          className="w-full flex items-center justify-between p-2.5 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200/70 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700/60 transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <img 
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
-              alt="Google" 
-              className="w-4 h-4" 
-            />
-            <div className="text-left">
-              <span className="text-xs font-semibold block">Continue with Google</span>
-            </div>
-          </div>
-          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-700 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">
-            Sign In
-          </span>
-        </button>
-
-        {errorInfo && (
-          <button
-            type="button"
-            onClick={() => setShowHelpModal(true)}
-            className="w-full p-2 text-left bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-[11px] text-rose-700 dark:text-rose-300 flex items-center justify-between"
-          >
-            <span>{errorInfo.title}</span>
-            <span className="underline font-bold">Troubleshoot</span>
-          </button>
-        )}
-
-        {renderHelpModal()}
       </div>
     );
   }
@@ -643,30 +592,11 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({ variant = 'n
       <button
         id="btn-nav-customer-account"
         onClick={() => openCustomerAuthModal('login')}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer border border-slate-200/60 dark:border-slate-700 shadow-2xs group"
-        title="Sign in or create customer account"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer border border-slate-200/60 dark:border-slate-700 shadow-2xs group"
+        title="Customer account and orders"
       >
         <User className="w-3.5 h-3.5 text-rose-500" />
-        <span className="hidden sm:inline">Account</span>
-      </button>
-
-      <button
-        id="btn-nav-google-signin"
-        onClick={handleSignIn}
-        disabled={isLoading}
-        className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer border border-slate-200/60 dark:border-slate-700 shadow-2xs group"
-        title="Sign in with Google (Optional)"
-      >
-        {isLoading ? (
-          <span className="w-3.5 h-3.5 border-2 border-slate-400 border-t-rose-600 rounded-full animate-spin" />
-        ) : (
-          <img 
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
-            alt="Google" 
-            className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" 
-          />
-        )}
-        <span>Google</span>
+        <span className="font-medium">Account</span>
       </button>
 
       {errorInfo && (
