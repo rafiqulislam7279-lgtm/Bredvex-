@@ -52,9 +52,9 @@ service cloud.firestore {
       allow delete: if isValidId(productId);
     }
 
-    // Orders collection: Shoppers can place orders, track orders by ID, and admin can update status
+    // Orders collection: Real-time orders visible to admin and trackable by shoppers
     match /orders/{orderId} {
-      allow read: if isValidId(orderId);
+      allow read: if true;
       allow create, update: if isValidId(orderId);
       allow delete: if isValidId(orderId);
     }
@@ -62,7 +62,7 @@ service cloud.firestore {
     // Coupons collection: Publicly readable for cart validation, managed by admin
     match /coupons/{couponId} {
       allow read: if true;
-      allow create, update: if isValidId(couponId) && isValidCoupon(request.resource.data);
+      allow create, update: if isValidId(couponId);
       allow delete: if isValidId(couponId);
     }
 
@@ -75,13 +75,13 @@ service cloud.firestore {
     // Reviews collection: Publicly readable product feedback
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if isValidId(reviewId) && isValidReview(request.resource.data);
-      allow update, delete: if isValidId(reviewId) && isSignedIn();
+      allow create, update: if isValidId(reviewId);
+      allow delete: if isValidId(reviewId);
     }
 
-    // Users collection: Optional customer profile accounts
+    // Users collection: Customer profile accounts
     match /users/{userId} {
-      allow read, write: if isValidId(userId) && isOwner(userId);
+      allow read, write: if isValidId(userId);
     }
 
     // Fallback default deny

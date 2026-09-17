@@ -91,11 +91,13 @@ export const CustomerAuthModal: React.FC = () => {
   const customerOrders = orders.filter(o => {
     if (!currentUser && !customerProfile) return false;
     const matchUid = currentUser?.uid && o.userId === currentUser.uid;
-    const matchEmail = (currentUser?.email || customerProfile?.email) && 
-      o.customerInfo.email?.toLowerCase() === (currentUser?.email || customerProfile?.email)?.toLowerCase();
-    const matchPhone = customerProfile?.phone && 
-      o.customerInfo.phone.replace(/[^0-9]/g, '') === customerProfile.phone.replace(/[^0-9]/g, '');
-    return matchUid || matchEmail || matchPhone;
+    const userEmail = (currentUser?.email || customerProfile?.email)?.toLowerCase();
+    const orderEmail = o.customerInfo?.email?.toLowerCase();
+    const matchEmail = Boolean(userEmail && orderEmail && userEmail === orderEmail);
+    const userPhone = customerProfile?.phone ? customerProfile.phone.replace(/[^0-9]/g, '') : '';
+    const orderPhone = o.customerInfo?.phone ? o.customerInfo.phone.replace(/[^0-9]/g, '') : '';
+    const matchPhone = Boolean(userPhone && orderPhone && userPhone === orderPhone);
+    return Boolean(matchUid || matchEmail || matchPhone);
   });
 
   const totalSpent = customerOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
@@ -809,17 +811,17 @@ export const CustomerAuthModal: React.FC = () => {
 
                         {/* Order items summary */}
                         <div className="text-[11px] text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-900/70 p-2 rounded-xl border border-slate-200/60 dark:border-slate-800">
-                          {order.items.map((item, idx) => (
+                          {(order.items || []).map((item, idx) => (
                             <div key={idx} className="flex justify-between py-0.5">
-                              <span className="truncate pr-2">{item.quantity}x {item.product.name}</span>
-                              <span className="font-semibold shrink-0">৳{(item.product.price * item.quantity).toLocaleString()}</span>
+                              <span className="truncate pr-2">{item.quantity}x {item.product?.name || 'Product'}</span>
+                              <span className="font-semibold shrink-0">৳{((item.product?.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
                             </div>
                           ))}
                         </div>
 
                         <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200 dark:border-slate-700">
                           <span className="font-bold text-slate-900 dark:text-white">
-                            Total: ৳{order.grandTotal.toLocaleString()}
+                            Total: ৳{(order.grandTotal || 0).toLocaleString()}
                           </span>
 
                           <div className="flex items-center gap-2">

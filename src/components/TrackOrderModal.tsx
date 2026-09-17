@@ -24,7 +24,7 @@ export const TrackOrderModal: React.FC = () => {
 
   // Orders linked to the signed-in Google user
   const userOrders = currentUser 
-    ? orders.filter(o => o.userId === currentUser.uid || (currentUser.email && o.customerInfo.email?.toLowerCase() === currentUser.email.toLowerCase())) 
+    ? orders.filter(o => o.userId === currentUser.uid || (currentUser.email && o.customerInfo?.email?.toLowerCase() === currentUser.email.toLowerCase())) 
     : [];
 
   if (!isTrackOrderOpen) return null;
@@ -37,9 +37,9 @@ export const TrackOrderModal: React.FC = () => {
     setHasSearched(true);
     const found = orders.find(
       (o) =>
-        o.orderNumber.toUpperCase() === query ||
-        o.orderNumber.replace('#', '').toUpperCase() === query ||
-        o.customerInfo.phone.replace(/[^0-9]/g, '').includes(query.replace(/[^0-9]/g, ''))
+        (o.orderNumber && o.orderNumber.toUpperCase() === query) ||
+        (o.orderNumber && o.orderNumber.replace('#', '').toUpperCase() === query) ||
+        (o.customerInfo?.phone && o.customerInfo.phone.replace(/[^0-9]/g, '').includes(query.replace(/[^0-9]/g, '')))
     );
     setSearchedOrder(found || null);
   };
@@ -195,10 +195,10 @@ export const TrackOrderModal: React.FC = () => {
                     searchedOrder.status === 'processing' ? 'bg-amber-100 text-amber-800' :
                     'bg-slate-200 text-slate-700'
                   }`}>
-                    {searchedOrder.status}
+                    {searchedOrder.status || 'pending'}
                   </span>
                   <span className="text-xs font-mono font-bold text-slate-700 mt-1">
-                    ৳{searchedOrder.grandTotal.toLocaleString()} ({searchedOrder.paymentMethod.toUpperCase()})
+                    ৳{(searchedOrder.grandTotal || 0).toLocaleString()} ({(searchedOrder.paymentMethod || 'COD').toUpperCase()})
                   </span>
                 </div>
               </div>
@@ -297,7 +297,7 @@ export const TrackOrderModal: React.FC = () => {
                     <div>
                       <h5 className="text-xs font-bold text-slate-900">Delivered to Recipient</h5>
                       <p className="text-[11px] text-slate-500">
-                        Destination: {searchedOrder.customerInfo.address}, {searchedOrder.customerInfo.district}
+                        Destination: {searchedOrder.customerInfo?.address || 'Bangladesh'}, {searchedOrder.customerInfo?.district || 'Dhaka'}
                       </p>
                     </div>
                   </div>
@@ -308,13 +308,13 @@ export const TrackOrderModal: React.FC = () => {
               <div className="space-y-2 text-xs">
                 <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">Items in this shipment:</h4>
                 <div className="space-y-1.5">
-                  {searchedOrder.items.map((item, idx) => (
+                  {(searchedOrder.items || []).map((item, idx) => (
                     <div key={idx} className="p-2.5 bg-slate-50 rounded-xl flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <img src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80'} alt="" className="w-8 h-8 rounded-md object-cover" />
-                        <span className="font-medium text-slate-800">{item.product.name} (x{item.quantity})</span>
+                        <img src={item.product?.images?.[0] || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80'} alt="" className="w-8 h-8 rounded-md object-cover" />
+                        <span className="font-medium text-slate-800">{item.product?.name || 'Product'} (x{item.quantity || 1})</span>
                       </div>
-                      <span className="font-mono font-bold text-slate-900">৳{(item.product.price * item.quantity).toLocaleString()}</span>
+                      <span className="font-mono font-bold text-slate-900">৳{((item.product?.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>

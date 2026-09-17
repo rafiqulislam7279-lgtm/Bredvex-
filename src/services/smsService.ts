@@ -10,13 +10,20 @@ export interface SmsResult {
 }
 
 export const generateOrderSmsText = (order: Order, storeName: string = 'BREDVEX'): string => {
-  return `Dear ${order.customerInfo.name}, thank you for your order #${order.orderNumber} at ${storeName}! Total: ৳${order.grandTotal.toLocaleString()} (${order.paymentMethod.toUpperCase()}). We are packing your items. Hotline: 01711223344`;
+  const customerName = order.customerInfo?.name || 'Customer';
+  const orderNum = order.orderNumber || order.id || 'ORDER';
+  const grandTotal = (order.grandTotal || 0).toLocaleString();
+  const paymentMethod = (order.paymentMethod || 'COD').toUpperCase();
+  return `Dear ${customerName}, thank you for your order #${orderNum} at ${storeName}! Total: ৳${grandTotal} (${paymentMethod}). We are packing your items. Hotline: 01711223344`;
 };
 
 export const generateCourierSmsText = (order: Order, storeName: string = 'BREDVEX'): string => {
+  const customerName = order.customerInfo?.name || 'Customer';
+  const orderNum = order.orderNumber || order.id || 'ORDER';
   const courier = order.trackingCourier || 'Steadfast / Pathao';
   const tracking = order.trackingNumber || order.consignmentId || 'BD-TRK';
-  return `Dear ${order.customerInfo.name}, your ${storeName} parcel #${order.orderNumber} is dispatched with ${courier}! Tracking ID: ${tracking}. Keep cash ready: ৳${order.grandTotal.toLocaleString()}. Track: https://bredvex.com/track`;
+  const grandTotal = (order.grandTotal || 0).toLocaleString();
+  return `Dear ${customerName}, your ${storeName} parcel #${orderNum} is dispatched with ${courier}! Tracking ID: ${tracking}. Keep cash ready: ৳${grandTotal}. Track: https://bredvex.com/track`;
 };
 
 export const sendSmsNotification = async (

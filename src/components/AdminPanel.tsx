@@ -502,11 +502,11 @@ export const AdminPanel: React.FC = () => {
   };
 
   // Metrics Calculations
-  const totalRevenue = orders.reduce((acc, o) => acc + o.grandTotal, 0);
+  const totalRevenue = orders.reduce((acc, o) => acc + (Number(o.grandTotal) || 0), 0);
   const pendingOrdersCount = orders.filter(o => o.status === 'pending').length;
   const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    p.category.toLowerCase().includes(productSearch.toLowerCase())
+    (p.name || '').toLowerCase().includes(productSearch.toLowerCase()) ||
+    (p.category || '').toLowerCase().includes(productSearch.toLowerCase())
   );
   const filteredOrders = orders.filter(o =>
     orderFilter === 'all' ? true : o.status === orderFilter
@@ -1021,18 +1021,18 @@ export const AdminPanel: React.FC = () => {
                   <tbody className="divide-y divide-slate-100">
                     {orders.slice(0, 5).map((ord) => (
                       <tr key={ord.id} className="hover:bg-slate-50/50">
-                        <td className="px-6 py-3.5 font-mono font-bold text-slate-900">#{ord.orderNumber}</td>
+                        <td className="px-6 py-3.5 font-mono font-bold text-slate-900">#{ord.orderNumber || ord.id}</td>
                         <td className="px-6 py-3.5">
-                          <p className="font-bold text-slate-800">{ord.customerInfo.name}</p>
-                          <p className="text-[10px] text-slate-400">{ord.customerInfo.city}, {ord.customerInfo.district}</p>
+                          <p className="font-bold text-slate-800">{ord.customerInfo?.name || 'Customer'}</p>
+                          <p className="text-[10px] text-slate-400">{ord.customerInfo?.city || 'Dhaka'}, {ord.customerInfo?.district || 'Dhaka'}</p>
                         </td>
                         <td className="px-6 py-3.5">
                           <span className="uppercase font-bold text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-800">
-                            {ord.paymentMethod}
+                            {ord.paymentMethod || 'COD'}
                           </span>
                         </td>
                         <td className="px-6 py-3.5 font-mono font-bold text-slate-900">
-                          ৳{ord.grandTotal.toLocaleString()}
+                          ৳{(ord.grandTotal || 0).toLocaleString()}
                         </td>
                         <td className="px-6 py-3.5">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
@@ -1041,7 +1041,7 @@ export const AdminPanel: React.FC = () => {
                             ord.status === 'processing' ? 'bg-amber-100 text-amber-800' :
                             'bg-slate-200 text-slate-700'
                           }`}>
-                            {ord.status}
+                            {ord.status || 'pending'}
                           </span>
                         </td>
                       </tr>
@@ -1357,10 +1357,10 @@ export const AdminPanel: React.FC = () => {
                       {/* Customer Info */}
                       <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1">
                         <h5 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider">Customer & Delivery:</h5>
-                        <p className="font-semibold text-slate-800">{ord.customerInfo.name}</p>
-                        <p className="font-mono text-slate-700">Phone: {ord.customerInfo.phone}</p>
-                        <p>{ord.customerInfo.address}, {ord.customerInfo.city}, {ord.customerInfo.district}</p>
-                        {ord.customerInfo.deliveryNotes && (
+                        <p className="font-semibold text-slate-800">{ord.customerInfo?.name || 'Customer'}</p>
+                        <p className="font-mono text-slate-700">Phone: {ord.customerInfo?.phone || 'N/A'}</p>
+                        <p>{ord.customerInfo?.address || 'Bangladesh'}, {ord.customerInfo?.city || 'Dhaka'}, {ord.customerInfo?.district || 'Dhaka'}</p>
+                        {ord.customerInfo?.deliveryNotes && (
                           <p className="text-[11px] text-amber-700 italic">Note: "{ord.customerInfo.deliveryNotes}"</p>
                         )}
                       </div>
@@ -1368,9 +1368,9 @@ export const AdminPanel: React.FC = () => {
                       {/* Payment Info */}
                       <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-1">
                         <h5 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider">Payment Details:</h5>
-                        <p className="font-semibold text-slate-800 uppercase">Method: {ord.paymentMethod}</p>
+                        <p className="font-semibold text-slate-800 uppercase">Method: {ord.paymentMethod || 'COD'}</p>
                         <p className="font-mono font-bold text-emerald-700">
-                          Total Amount: ৳{ord.grandTotal.toLocaleString()}
+                          Total Amount: ৳{(ord.grandTotal || 0).toLocaleString()}
                         </p>
                         {ord.transactionId && (
                           <p className="font-mono text-[11px]">TrxID: <strong className="text-slate-900">{ord.transactionId}</strong></p>
@@ -1388,7 +1388,7 @@ export const AdminPanel: React.FC = () => {
                                 : 'bg-amber-100 text-amber-800'
                             }`}
                           >
-                            {ord.paymentStatus.toUpperCase()} (Click to toggle)
+                            {(ord.paymentStatus || 'pending').toUpperCase()} (Click to toggle)
                           </button>
                         </div>
                       </div>
@@ -1511,13 +1511,13 @@ export const AdminPanel: React.FC = () => {
                     <div className="pt-1 border-t border-slate-100">
                       <h5 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Items ordered:</h5>
                       <div className="flex flex-wrap gap-2">
-                        {ord.items.map((item, i) => (
+                        {(ord.items || []).map((item, i) => (
                           <div key={i} className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                            <img src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80'} alt="" className="w-8 h-8 rounded-lg object-cover" />
+                            <img src={item.product?.images?.[0] || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80'} alt="" className="w-8 h-8 rounded-lg object-cover" />
                             <div>
-                              <p className="font-semibold text-slate-800">{item.product.name}</p>
+                              <p className="font-semibold text-slate-800">{item.product?.name || 'Product'}</p>
                               <p className="text-[10px] text-slate-500">
-                                Qty: {item.quantity} {item.selectedColor ? `(${item.selectedColor})` : ''} • ৳{(item.product.price * item.quantity).toLocaleString()}
+                                Qty: {item.quantity || 1} {item.selectedColor ? `(${item.selectedColor})` : ''} • ৳{((item.product?.price || 0) * (item.quantity || 1)).toLocaleString()}
                               </p>
                             </div>
                           </div>
@@ -3175,14 +3175,14 @@ export const AdminPanel: React.FC = () => {
                             <div>
                               <p className="font-bold text-slate-900 text-xs">{prod?.name || 'Product'}</p>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="font-semibold text-slate-700 text-xs">{rev.authorName}</span>
-                                {rev.verifiedPurchase && (
+                                <span className="font-semibold text-slate-700 text-xs">{rev.authorName || rev.userName || 'Customer'}</span>
+                                {(rev.verifiedPurchase || rev.verifiedBuyer) && (
                                   <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800">
                                     Verified Buyer
                                   </span>
                                 )}
-                                {rev.location && (
-                                  <span className="text-[11px] text-slate-400">• {rev.location}</span>
+                                {(rev.location || rev.userLocation) && (
+                                  <span className="text-[11px] text-slate-400">• {rev.location || rev.userLocation}</span>
                                 )}
                               </div>
                             </div>
@@ -3193,14 +3193,14 @@ export const AdminPanel: React.FC = () => {
                               {[1, 2, 3, 4, 5].map((s) => (
                                 <Star
                                   key={s}
-                                  className={`w-3.5 h-3.5 ${s <= rev.rating ? 'fill-current' : 'text-slate-300'}`}
+                                  className={`w-3.5 h-3.5 ${s <= (rev.rating || 5) ? 'fill-current' : 'text-slate-300'}`}
                                 />
                               ))}
-                              <span className="font-mono text-xs font-bold text-slate-700 ml-1">{rev.rating}.0</span>
+                              <span className="font-mono text-xs font-bold text-slate-700 ml-1">{rev.rating || 5}.0</span>
                             </div>
 
                             <span className="text-[11px] text-slate-400">
-                              {new Date(rev.createdAt).toLocaleDateString()}
+                              {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString() : 'Recent'}
                             </span>
 
                             <button

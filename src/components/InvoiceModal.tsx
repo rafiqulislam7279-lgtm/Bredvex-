@@ -112,11 +112,11 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, settings, onC
             {/* Customer Details */}
             <div className="space-y-1.5">
               <h3 className="font-bold text-slate-900 uppercase tracking-wider text-[11px] text-slate-500">Bill & Ship To (গ্রাহকের তথ্য):</h3>
-              <p className="text-sm font-bold text-slate-950">{order.customerInfo.name}</p>
-              <p className="font-mono text-slate-800 font-semibold">{order.customerInfo.phone}</p>
-              <p className="text-slate-600 leading-relaxed">{order.customerInfo.address}</p>
-              <p className="text-slate-500">{order.customerInfo.city}, {order.customerInfo.district} ({order.customerInfo.zone === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'})</p>
-              {order.customerInfo.deliveryNotes && (
+              <p className="text-sm font-bold text-slate-950">{order.customerInfo?.name || 'Customer'}</p>
+              <p className="font-mono text-slate-800 font-semibold">{order.customerInfo?.phone || 'N/A'}</p>
+              <p className="text-slate-600 leading-relaxed">{order.customerInfo?.address || 'Bangladesh'}</p>
+              <p className="text-slate-500">{order.customerInfo?.city || 'Dhaka'}, {order.customerInfo?.district || 'Dhaka'} ({order.customerInfo?.zone === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'})</p>
+              {order.customerInfo?.deliveryNotes && (
                 <p className="italic text-slate-500 pt-1">Note: "{order.customerInfo.deliveryNotes}"</p>
               )}
             </div>
@@ -157,20 +157,20 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, settings, onC
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {order.items.map((item, idx) => (
+                {(order.items || []).map((item, idx) => (
                   <tr key={idx} className="hover:bg-slate-50/50">
                     <td className="py-3 px-4 text-slate-400 font-mono">{idx + 1}</td>
                     <td className="py-3 px-4">
-                      <p className="font-bold text-slate-900">{item.product.name}</p>
+                      <p className="font-bold text-slate-900">{item.product?.name || 'Product'}</p>
                       <div className="flex items-center gap-2 text-[11px] text-slate-500 pt-0.5">
                         {item.selectedColor && <span>Color: <strong>{item.selectedColor}</strong></span>}
                         {item.selectedSize && <span>| Size: <strong>{item.selectedSize}</strong></span>}
-                        <span>| SKU: {item.product.id}</span>
+                        <span>| SKU: {item.product?.id || 'N/A'}</span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-center font-bold text-slate-800 font-mono">{item.quantity}</td>
-                    <td className="py-3 px-4 text-right font-mono text-slate-600">৳{item.product.price.toLocaleString()}</td>
-                    <td className="py-3 px-4 text-right font-mono font-bold text-slate-950">৳{(item.product.price * item.quantity).toLocaleString()}</td>
+                    <td className="py-3 px-4 text-center font-bold text-slate-800 font-mono">{item.quantity || 1}</td>
+                    <td className="py-3 px-4 text-right font-mono text-slate-600">৳{(item.product?.price || 0).toLocaleString()}</td>
+                    <td className="py-3 px-4 text-right font-mono font-bold text-slate-950">৳{((item.product?.price || 0) * (item.quantity || 1)).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -189,21 +189,21 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, settings, onC
             <div className="w-full sm:w-72 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
               <div className="flex justify-between text-slate-600">
                 <span>Subtotal:</span>
-                <span className="font-mono">৳{order.subtotal.toLocaleString()}</span>
+                <span className="font-mono">৳{(order.subtotal || 0).toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-slate-600">
-                <span>Delivery Charge ({order.customerInfo.zone === 'inside_dhaka' ? 'Dhaka' : 'Outside'}):</span>
-                <span className="font-mono">৳{order.shippingCost.toLocaleString()}</span>
+                <span>Delivery Charge ({order.customerInfo?.zone === 'inside_dhaka' ? 'Dhaka' : 'Outside'}):</span>
+                <span className="font-mono">৳{(order.shippingCost || 0).toLocaleString()}</span>
               </div>
-              {order.discountAmount > 0 && (
+              {(order.discountAmount || 0) > 0 && (
                 <div className="flex justify-between text-emerald-600 font-semibold">
                   <span>Coupon Discount:</span>
-                  <span className="font-mono">-৳{order.discountAmount.toLocaleString()}</span>
+                  <span className="font-mono">-৳{(order.discountAmount || 0).toLocaleString()}</span>
                 </div>
               )}
               <div className="border-t border-slate-300 pt-2 flex justify-between items-baseline font-bold text-slate-950 text-sm">
                 <span>Grand Total:</span>
-                <span className="font-mono text-base font-black text-slate-950">৳{order.grandTotal.toLocaleString()}</span>
+                <span className="font-mono text-base font-black text-slate-950">৳{(order.grandTotal || 0).toLocaleString()}</span>
               </div>
 
               {/* COD Collection Highlight */}
@@ -212,7 +212,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, settings, onC
                   {isCod ? 'Cash to Collect on Delivery (COD)' : 'Payment Status'}
                 </span>
                 <span className="text-lg font-mono font-black text-rose-900">
-                  {isCod ? `৳${order.grandTotal.toLocaleString()}` : 'PAID IN ADVANCE (৳0)'}
+                  {isCod ? `৳${(order.grandTotal || 0).toLocaleString()}` : 'PAID IN ADVANCE (৳0)'}
                 </span>
               </div>
             </div>

@@ -116,14 +116,19 @@ export interface ProductReview {
   comment: string;
   createdAt: string;
   verifiedBuyer?: boolean;
+  authorName?: string;
+  location?: string;
+  verifiedPurchase?: boolean;
 }
 
 export interface FlashSaleConfig {
   enabled: boolean;
   title: string;
   subtitle: string;
-  endTime: string;
-  discountLabel: string;
+  endTime?: string;
+  discountLabel?: string;
+  endsAt?: string;
+  discountBadge?: string;
 }
 
 export interface SmsSettings {
